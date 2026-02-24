@@ -46,3 +46,13 @@ management:
 logging:
   pattern:
     level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+
+fcm:
+  project-id: ${FCM_PROJECT_ID:my-firebase-project}
+
+oauth2:
+  awt:
+    google:
+      service-account-key-path: ${GOOGLE_SERVICE_ACCOUNT_KEY_PATH:}
+      scopes:
+        - https://www.googleapis.com/auth/cloud-messaging
