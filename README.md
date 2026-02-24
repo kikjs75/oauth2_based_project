@@ -1,5 +1,7 @@
 # Portfolio Backend — Production-Grade Spring Boot
 
+> **GitHub**: https://github.com/kikjs75/oauth2_based_project
+
 A production-ready backend portfolio demonstrating:
 - OAuth2 JWT Assertion client (Google/Microsoft)
 - FCM HTTP v1 push notifications
