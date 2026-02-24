@@ -193,6 +193,19 @@ docker-compose up -d
 > 컨테이너 내부 `/secrets/google-service-account.json`에 자동 마운트됩니다.
 > 미설정 시 FCM 빈이 비활성화되어 앱은 정상 기동되며, `/api/push/test`만 비활성 상태가 됩니다.
 
+### Run with Docker Compose (전체 스택 — 백엔드 + 프론트엔드)
+```bash
+cp .env.example .env
+# .env 에서 JWT_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET 설정
+
+docker-compose up -d
+```
+
+| 서비스 | URL |
+|---|---|
+| 프론트엔드 | http://localhost:8081 |
+| 백엔드 API | http://localhost:8080 |
+
 ### Run locally (development)
 ```bash
 # 1. 의존 서비스 기동 (MariaDB + Jaeger)
@@ -201,13 +214,13 @@ docker-compose up -d mariadb jaeger
 # 2. 백엔드 실행 (http://localhost:8080)
 ./gradlew :app:bootRun
 
-# 3. 프론트엔드 실행 (별도 터미널, http://localhost:3000)
+# 3. 프론트엔드 실행 (별도 터미널, http://localhost:8081)
 cd frontend
 npm install
 npm run dev
 ```
 
-> 프론트엔드는 `/api` 요청을 `http://localhost:8080`으로 프록시합니다.
+> 프론트엔드 dev 서버는 `/api` 요청을 `http://localhost:8080`으로 프록시합니다.
 
 ## API Endpoints
 
@@ -273,6 +286,8 @@ npm run dev
 
 | Service | URL |
 |---|---|
+| 프론트엔드 | http://localhost:8081 |
+| 백엔드 API | http://localhost:8080 |
 | Prometheus | http://localhost:9090 |
 | Grafana | http://localhost:3000 (admin/admin) |
 | Jaeger | http://localhost:16686 |
