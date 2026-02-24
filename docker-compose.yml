@@ -90,6 +90,9 @@ services:
       DB_DRIVER: org.mariadb.jdbc.Driver
       HIBERNATE_DIALECT: org.hibernate.dialect.MariaDBDialect
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production-use-env-var}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      OAUTH2_REDIRECT_URI: ${OAUTH2_REDIRECT_URI:-http://localhost:8080/api/auth/oauth2/callback}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
       OTEL_SERVICE_NAME: portfolio-app
       # FCM: 호스트의 서비스 계정 JSON을 컨테이너 내부 고정 경로로 마운트

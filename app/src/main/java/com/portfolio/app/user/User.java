@@ -13,11 +13,17 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 50)
+    @Column(nullable = false, unique = true, length = 255)
     private String username;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String password;
+
+    @Column(nullable = false, length = 20)
+    private String provider = "LOCAL";
+
+    @Column(name = "provider_id", length = 255)
+    private String providerId;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
@@ -32,12 +38,22 @@ public class User {
     public User(String username, String password) {
         this.username = username;
         this.password = password;
+        this.provider = "LOCAL";
+        this.roles.add("ROLE_USER");
+    }
+
+    public User(String username, String provider, String providerId) {
+        this.username = username;
+        this.provider = provider;
+        this.providerId = providerId;
         this.roles.add("ROLE_USER");
     }
 
     public Long getId() { return id; }
     public String getUsername() { return username; }
     public String getPassword() { return password; }
+    public String getProvider() { return provider; }
+    public String getProviderId() { return providerId; }
     public Set<String> getRoles() { return roles; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

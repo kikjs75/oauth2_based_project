@@ -130,7 +130,7 @@ oauth2_based_project/
 | 항목 | 내용 |
 |---|---|
 | **멀티모듈** | `app`, `oauth2-awt-core`, `oauth2-awt-starter`, `fcm-client` |
-| **JWT 인증** | Nimbus JOSE HS256, signup/login, role-based 접근 제어 |
+| **JWT 인증** | Nimbus JOSE HS256, signup/login/Google OAuth2, role-based 접근 제어 |
 | **역할 관리** | USER → WRITER 승격 (ADMIN only), 게시판 WRITER/ADMIN 전용 |
 | **OAuth2 AWT** | RS256 JWT assertion, Caffeine 캐시, single-flight, retry |
 | **FCM** | HTTP v1 API, Micrometer Timer 메트릭 |
@@ -177,6 +177,8 @@ docker-compose up -d mariadb jaeger
 |---|---|---|---|
 | POST | /api/auth/signup | Public | Register a new user |
 | POST | /api/auth/login | Public | Obtain JWT token |
+| GET | /oauth2/authorization/google | Public | Start Google OAuth2 login flow |
+| GET | /login/oauth2/code/google | Public | Google OAuth2 callback (handled by Spring Security) |
 | POST | /api/admin/users/{id}/grant-writer | ADMIN | Promote user to WRITER |
 | POST | /api/posts | WRITER, ADMIN | Create a post |
 | GET | /api/posts | Authenticated | List all posts |
@@ -201,6 +203,11 @@ DB_URL=jdbc:mariadb://localhost:3306/portfolio
 DB_USERNAME=portfolio
 DB_PASSWORD=portfolio
 
+# Google OAuth2 Login (Authorization Code flow)
+GOOGLE_CLIENT_ID=your-google-oauth2-client-id
+GOOGLE_CLIENT_SECRET=your-google-oauth2-client-secret
+OAUTH2_REDIRECT_URI=http://localhost:3000/callback
+
 # Google OAuth2 AWT + FCM
 # GOOGLE_SERVICE_ACCOUNT_KEY_PATH: 호스트 파일 경로 → docker-compose가 컨테이너 내부로 마운트
 GOOGLE_SERVICE_ACCOUNT_KEY_PATH=/path/to/service-account.json
@@ -215,6 +222,8 @@ MICROSOFT_KEY_ID=your-certificate-thumbprint
 
 | 항목 | 로컬 개발 (`bootRun`) | Docker Compose |
 |---|---|---|
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | `.env`에 설정 (미설정 시 OAuth2 로그인 불가, 앱 기동 O) | 동일 |
+| `OAUTH2_REDIRECT_URI` | 프론트엔드 콜백 URL (기본: `http://localhost:3000/callback`) | 동일 |
 | `GOOGLE_SERVICE_ACCOUNT_KEY_PATH` | 호스트 경로 직접 참조 | 호스트 경로 → `/secrets/google-service-account.json` 자동 마운트 |
 | FCM 미설정 시 | 앱 기동 O, push 엔드포인트만 비활성 | 동일 |
 | Microsoft | 선택 사항, 미설정 시 빈 비활성 | 동일 |
@@ -222,9 +231,26 @@ MICROSOFT_KEY_ID=your-certificate-thumbprint
 ## Security
 
 - No real credentials are committed to the repository
+- Google OAuth2 Login: client-id/secret via environment variables only
 - Google service account JSON is loaded via file path only
 - Microsoft private key is loaded via PEM file path only
 - JWT secret via environment variable only
+
+## Google OAuth2 Login Flow
+
+```
+Browser/Client
+  → GET /oauth2/authorization/google          (Spring Security redirects to Google)
+  → Google consent screen
+  → GET /login/oauth2/code/google?code=...   (Spring Security handles callback)
+  → GoogleOAuth2UserService: find-or-create user in DB
+  → OAuth2AuthenticationSuccessHandler: issue JWT
+  → redirect → {OAUTH2_REDIRECT_URI}?token={JWT}
+  → Client uses token for subsequent API calls
+```
+
+Google Cloud Console에서 `http://localhost:8080/login/oauth2/code/google`을
+Authorized redirect URI로 등록해야 합니다.
 
 ## Database Support
 
@@ -235,9 +261,11 @@ Flyway 마이그레이션은 `{vendor}` 플레이스홀더로 DB별 스크립트
 ```
 db/migration/
 ├── mariadb/
-│   └── V1__init_schema.sql   ← AUTO_INCREMENT, DATETIME(6)
+│   ├── V1__init_schema.sql          ← AUTO_INCREMENT, DATETIME(6)
+│   └── V2__add_oauth2_provider.sql  ← password nullable, provider/provider_id 컬럼 추가
 └── postgresql/
-    └── V1__init_schema.sql   ← GENERATED ALWAYS AS IDENTITY, TIMESTAMP(6)
+    ├── V1__init_schema.sql          ← GENERATED ALWAYS AS IDENTITY, TIMESTAMP(6)
+    └── V2__add_oauth2_provider.sql  ← password nullable, provider/provider_id 컬럼 추가
 ```
 
 Switch to PostgreSQL:
