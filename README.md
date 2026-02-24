@@ -30,9 +30,11 @@ oauth2_based_project/
 │       │   │   ├── admin/                         ← ADMIN: WRITER 역할 부여
 │       │   │   │   ├── AdminController.java
 │       │   │   │   └── AdminService.java
-│       │   │   ├── auth/                          ← 회원가입 / 로그인 / JWT 발급
+│       │   │   ├── auth/                          ← 회원가입 / 로그인 / Google OAuth2 / JWT 발급
 │       │   │   │   ├── AuthController.java
 │       │   │   │   ├── AuthService.java
+│       │   │   │   ├── GoogleOAuth2UserService.java          ← Google 사용자 find-or-create
+│       │   │   │   ├── OAuth2AuthenticationSuccessHandler.java ← JWT 발급 후 프론트엔드로 리다이렉트
 │       │   │   │   └── dto/
 │       │   │   │       ├── LoginRequest.java
 │       │   │   │       ├── SignupRequest.java
@@ -49,6 +51,7 @@ oauth2_based_project/
 │       │   │   │   ├── PostService.java
 │       │   │   │   └── dto/
 │       │   │   │       ├── CreatePostRequest.java
+│       │   │   │       ├── UpdatePostRequest.java
 │       │   │   │       └── PostResponse.java
 │       │   │   ├── push/                          ← FCM 테스트 푸시 (WRITER/ADMIN)
 │       │   │   │   ├── PushController.java
@@ -66,29 +69,35 @@ oauth2_based_project/
 │       │   └── resources/
 │       │       ├── application.yml
 │       │       └── db/migration/                  ← Flyway {vendor} 자동 분기
-│       │           ├── mariadb/V1__init_schema.sql
-│       │           └── postgresql/V1__init_schema.sql
+│       │           ├── mariadb/
+│       │           │   ├── V1__init_schema.sql
+│       │           │   └── V2__add_oauth2_provider.sql
+│       │           └── postgresql/
+│       │               ├── V1__init_schema.sql
+│       │               └── V2__add_oauth2_provider.sql
 │       └── test/
 │           ├── java/com/portfolio/app/
 │           │   ├── auth/
-│           │   │   ├── AuthIntegrationTest.java        ← MariaDB 통합 테스트 (signup/login)
-│           │   │   └── AuthPostgresIntegrationTest.java← PostgreSQL 통합 테스트 (signup/login)
+│           │   │   ├── AuthIntegrationTest.java             ← MariaDB 통합 테스트 (signup/login)
+│           │   │   ├── AuthPostgresIntegrationTest.java     ← PostgreSQL 통합 테스트 (signup/login)
+│           │   │   ├── GoogleOAuth2UserServiceTest.java     ← Mockito: find-or-create 3개 케이스
+│           │   │   └── OAuth2AuthenticationSuccessHandlerTest.java ← JWT 발급 및 리다이렉트 검증
 │           │   └── support/
-│           │       ├── MariaDbContainerSupport.java    ← GenericContainer + log wait + 브릿지 IP
-│           │       └── PostgresContainerSupport.java   ← GenericContainer + log wait + 브릿지 IP
+│           │       ├── MariaDbContainerSupport.java         ← GenericContainer + log wait + 브릿지 IP
+│           │       └── PostgresContainerSupport.java        ← GenericContainer + log wait + 브릿지 IP
 │           └── resources/
-│               ├── application-test.yml                ← MariaDB 테스트 프로파일
-│               └── application-test-pg.yml             ← PostgreSQL 테스트 프로파일
+│               ├── application-test.yml                     ← MariaDB 테스트 프로파일
+│               └── application-test-pg.yml                  ← PostgreSQL 테스트 프로파일
 │
 ├── oauth2-awt-core/                       ← OAuth2 JWT Assertion 라이브러리 (재사용 가능)
 │   ├── build.gradle
-│   └── src/main/java/com/portfolio/oauth2/awt/core/
-│       ├── AssertionConfig.java           ← Google/Microsoft 설정 (Builder 패턴)
-│       ├── AssertionTokenClient.java      ← 공개 API 진입점
-│       ├── CachedTokenProvider.java       ← Caffeine 캐시 + ReentrantLock single-flight
-│       ├── JwtAssertionBuilder.java       ← RS256 JWT 서명 (Nimbus JOSE)
-│       ├── TokenEndpointClient.java       ← 토큰 엔드포인트 HTTP 호출 (RestClient)
-│       └── TokenResponse.java             ← 액세스 토큰 + 만료시각, isExpiredWithSkew() 헬퍼
+│   ├── src/main/java/com/portfolio/oauth2/awt/core/
+│   │   ├── AssertionConfig.java           ← Google/Microsoft 설정 (Builder 패턴)
+│   │   ├── AssertionTokenClient.java      ← 공개 API 진입점
+│   │   ├── CachedTokenProvider.java       ← Caffeine 캐시 + ReentrantLock single-flight
+│   │   ├── JwtAssertionBuilder.java       ← RS256 JWT 서명 (Nimbus JOSE)
+│   │   ├── TokenEndpointClient.java       ← 토큰 엔드포인트 HTTP 호출 (RestClient)
+│   │   └── TokenResponse.java             ← 액세스 토큰 + 만료시각, isExpiredWithSkew() 헬퍼
 │   └── src/test/java/com/portfolio/oauth2/awt/core/
 │       ├── CachedTokenProviderTest.java   ← Mockito: 캐시 히트 시 단 1회만 fetch 검증
 │       └── JwtAssertionBuilderTest.java   ← 인메모리 RSA 키로 JWT 서명/파싱 검증
@@ -100,7 +109,7 @@ oauth2_based_project/
 │       │   ├── Oauth2AwtAutoConfiguration.java  ← @ConditionalOnExpression 조건부 빈 등록
 │       │   └── Oauth2AwtProperties.java         ← oauth2.awt.* 설정 바인딩
 │       └── resources/META-INF/spring/
-│           └── org.springframework.boot.autoconfigure.AutoConfiguration.imports  ← Spring Boot 자동 구성 등록 파일
+│           └── org.springframework.boot.autoconfigure.AutoConfiguration.imports
 │
 ├── fcm-client/                            ← FCM HTTP v1 클라이언트
 │   ├── build.gradle
@@ -115,30 +124,32 @@ oauth2_based_project/
 │       ├── datasources/prometheus.yml     ← Prometheus 데이터소스 자동 프로비저닝
 │       └── dashboards/dashboard.yml       ← 대시보드 프로바이더 설정
 │
-├── frontend/                              ← React 프론트엔드 (Vite)
+├── frontend/                              ← React 18 + Vite 프론트엔드
+│   ├── Dockerfile                         ← 멀티스테이지 빌드 (node:18 → nginx:alpine)
+│   ├── nginx.conf                         ← SPA 폴백, /api 프록시 → app:8080
 │   ├── package.json
-│   ├── vite.config.js                     ← port 8081, /api 프록시 → localhost:8080
+│   ├── vite.config.js                     ← dev 포트 8081, /api 프록시 → localhost:8080
 │   ├── index.html
 │   └── src/
 │       ├── main.jsx
 │       ├── App.jsx                        ← React Router 라우팅 정의
 │       ├── index.css
 │       ├── api/
-│       │   └── client.js                  ← Axios 인스턴스 + JWT 인터셉터 + 헬퍼
+│       │   └── client.js                  ← Axios 인스턴스 + JWT 인터셉터 + 파싱 헬퍼
 │       ├── components/
 │       │   └── Navbar.jsx
 │       └── pages/
 │           ├── SignupPage.jsx             ← ID/PW 회원가입
 │           ├── LoginPage.jsx             ← ID/PW 로그인 + Google 로그인 버튼
-│           ├── CallbackPage.jsx          ← OAuth2 리다이렉트 토큰 처리
+│           ├── CallbackPage.jsx          ← OAuth2 리다이렉트 토큰 수신 후 저장
 │           ├── PostListPage.jsx          ← 게시글 목록
 │           ├── PostDetailPage.jsx        ← 게시글 상세 + 수정/삭제 버튼
 │           └── PostFormPage.jsx          ← 게시글 작성/수정 폼
 │
 ├── build.gradle          ← 루트 공통 의존성 / BOM 관리
 ├── settings.gradle       ← 멀티모듈 서브프로젝트 선언
-├── docker-compose.yml    ← MariaDB, PostgreSQL, Prometheus, Grafana, Jaeger, App 전체 스택
-├── Dockerfile            ← 멀티스테이지 빌드 (Gradle → JRE 17 최소 이미지)
+├── docker-compose.yml    ← 전체 스택 (MariaDB, Prometheus, Grafana, Jaeger, App, Frontend)
+├── Dockerfile            ← 백엔드 멀티스테이지 빌드 (Gradle → JRE 17 최소 이미지)
 ├── gradlew               ← Gradle Wrapper 실행 스크립트
 └── .env.example          ← 환경변수 템플릿 (실제 secrets 미포함)
 ```
@@ -278,6 +289,13 @@ npm run dev
 
 ## Monitoring
 
+Prometheus, Grafana, Jaeger는 docker-compose에 포함되어 있습니다.
+포트는 [포트 정리](#포트-정리) 섹션을 참고하세요.
+
+- **Prometheus**: `/actuator/prometheus` 엔드포인트 스크레이핑
+- **Grafana**: Prometheus 데이터소스 자동 프로비저닝 (`monitoring/grafana/provisioning/`)
+- **Jaeger**: OTLP(gRPC/HTTP) 수신, 분산 트레이스 시각화
+
 ## Configuration
 
 All secrets are via environment variables (see `.env.example`):
@@ -343,15 +361,10 @@ Default: **MariaDB**
 
 Flyway 마이그레이션은 `{vendor}` 플레이스홀더로 DB별 스크립트를 자동 선택합니다:
 
-```
-db/migration/
-├── mariadb/
-│   ├── V1__init_schema.sql          ← AUTO_INCREMENT, DATETIME(6)
-│   └── V2__add_oauth2_provider.sql  ← password nullable, provider/provider_id 컬럼 추가
-└── postgresql/
-    ├── V1__init_schema.sql          ← GENERATED ALWAYS AS IDENTITY, TIMESTAMP(6)
-    └── V2__add_oauth2_provider.sql  ← password nullable, provider/provider_id 컬럼 추가
-```
+| 버전 | 내용 |
+|---|---|
+| V1 | 초기 스키마 (users, user_roles, posts) |
+| V2 | username 255자 확장, password nullable, provider / provider_id 컬럼 추가 (OAuth2 지원) |
 
 Switch to PostgreSQL:
 ```yaml
