@@ -1,0 +1,6 @@
+rootProject.name = 'portfolio'
+
+include 'app'
+include 'oauth2-awt-core'
+include 'oauth2-awt-starter'
+include 'fcm-client'
