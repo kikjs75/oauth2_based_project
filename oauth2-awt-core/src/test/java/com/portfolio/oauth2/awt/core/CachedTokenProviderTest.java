@@ -1,5 +1,6 @@
 package com.portfolio.oauth2.awt.core;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.security.KeyPairGenerator;
@@ -13,13 +14,18 @@ import static org.mockito.Mockito.*;
 
 class CachedTokenProviderTest {
 
-    @Test
-    void getAccessToken_cacheHit_doesNotRefetch() throws Exception {
+    private static String pemKey;
+
+    @BeforeAll
+    static void generateKey() throws Exception {
         KeyPair keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
-        String pemKey = "-----BEGIN PRIVATE KEY-----\n"
+        pemKey = "-----BEGIN PRIVATE KEY-----\n"
                 + Base64.getEncoder().encodeToString(keyPair.getPrivate().getEncoded())
                 + "\n-----END PRIVATE KEY-----";
+    }
 
+    @Test
+    void getAccessToken_google_cacheHit_doesNotRefetch() throws Exception {
         AssertionConfig config = AssertionConfig.builder()
                 .provider(AssertionConfig.Provider.GOOGLE)
                 .clientId("test@project.iam.gserviceaccount.com")
@@ -31,19 +37,39 @@ class CachedTokenProviderTest {
                 .maxRetries(3)
                 .build();
 
-        JwtAssertionBuilder assertionBuilder = new JwtAssertionBuilder(config);
         TokenEndpointClient mockClient = mock(TokenEndpointClient.class);
-        TokenResponse fakeToken = new TokenResponse("fake-token", Instant.now().plusSeconds(3600));
+        TokenResponse fakeToken = new TokenResponse("google-fake-token", Instant.now().plusSeconds(3600));
         when(mockClient.exchangeAssertion(anyString(), anyString())).thenReturn(fakeToken);
 
-        CachedTokenProvider provider = new CachedTokenProvider(config, assertionBuilder, mockClient);
+        CachedTokenProvider provider = new CachedTokenProvider(config, new JwtAssertionBuilder(config), mockClient);
 
-        String token1 = provider.getAccessToken();
-        String token2 = provider.getAccessToken();
+        assertEquals("google-fake-token", provider.getAccessToken());
+        assertEquals("google-fake-token", provider.getAccessToken());
+        verify(mockClient, times(1)).exchangeAssertion(anyString(), anyString());
+    }
 
-        assertEquals("fake-token", token1);
-        assertEquals("fake-token", token2);
-        // Only fetched once due to cache
+    @Test
+    void getAccessToken_microsoft_cacheHit_doesNotRefetch() throws Exception {
+        String tenantId = "test-tenant-id";
+        AssertionConfig config = AssertionConfig.builder()
+                .provider(AssertionConfig.Provider.MICROSOFT)
+                .clientId("test-azure-client-id")
+                .tokenEndpoint("https://login.microsoftonline.com/" + tenantId + "/oauth2/v2.0/token")
+                .scopes(List.of("https://graph.microsoft.com/.default"))
+                .privateKeyPem(pemKey)
+                .tokenExpirySeconds(3600)
+                .clockSkewSeconds(60)
+                .maxRetries(3)
+                .build();
+
+        TokenEndpointClient mockClient = mock(TokenEndpointClient.class);
+        TokenResponse fakeToken = new TokenResponse("microsoft-fake-token", Instant.now().plusSeconds(3600));
+        when(mockClient.exchangeAssertion(anyString(), anyString())).thenReturn(fakeToken);
+
+        CachedTokenProvider provider = new CachedTokenProvider(config, new JwtAssertionBuilder(config), mockClient);
+
+        assertEquals("microsoft-fake-token", provider.getAccessToken());
+        assertEquals("microsoft-fake-token", provider.getAccessToken());
         verify(mockClient, times(1)).exchangeAssertion(anyString(), anyString());
     }
 }
