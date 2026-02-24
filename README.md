@@ -149,11 +149,18 @@ oauth2_based_project/
 ```bash
 # Copy and configure environment
 cp .env.example .env
-# Edit .env with your values
+# Edit .env with your values:
+#   JWT_SECRET, FCM_PROJECT_ID
+#   GOOGLE_SERVICE_ACCOUNT_KEY_PATH=/host/path/to/service-account.json
 
 # Start all services (MariaDB + Prometheus + Grafana + Jaeger + App)
 docker-compose up -d
 ```
+
+> **FCM 설정 흐름**
+> `.env`의 `GOOGLE_SERVICE_ACCOUNT_KEY_PATH`(호스트 경로)가 docker-compose volume으로
+> 컨테이너 내부 `/secrets/google-service-account.json`에 자동 마운트됩니다.
+> 미설정 시 FCM 빈이 비활성화되어 앱은 정상 기동되며, `/api/push/test`만 비활성 상태가 됩니다.
 
 ### Run locally (development)
 ```bash
@@ -195,15 +202,22 @@ DB_USERNAME=portfolio
 DB_PASSWORD=portfolio
 
 # Google OAuth2 AWT + FCM
+# GOOGLE_SERVICE_ACCOUNT_KEY_PATH: 호스트 파일 경로 → docker-compose가 컨테이너 내부로 마운트
 GOOGLE_SERVICE_ACCOUNT_KEY_PATH=/path/to/service-account.json
 FCM_PROJECT_ID=my-firebase-project
 
-# Microsoft OAuth2 AWT
+# Microsoft OAuth2 AWT (선택)
 MICROSOFT_CLIENT_ID=your-azure-app-client-id
 MICROSOFT_TENANT_ID=your-azure-tenant-id
 MICROSOFT_PRIVATE_KEY_PEM_PATH=/path/to/client-private-key.pem
 MICROSOFT_KEY_ID=your-certificate-thumbprint
 ```
+
+| 항목 | 로컬 개발 (`bootRun`) | Docker Compose |
+|---|---|---|
+| `GOOGLE_SERVICE_ACCOUNT_KEY_PATH` | 호스트 경로 직접 참조 | 호스트 경로 → `/secrets/google-service-account.json` 자동 마운트 |
+| FCM 미설정 시 | 앱 기동 O, push 엔드포인트만 비활성 | 동일 |
+| Microsoft | 선택 사항, 미설정 시 빈 비활성 | 동일 |
 
 ## Security
 
