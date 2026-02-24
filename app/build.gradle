@@ -33,5 +33,4 @@ dependencies {
     testImplementation 'org.testcontainers:junit-jupiter'
     testImplementation 'org.testcontainers:mariadb'
     testImplementation 'org.testcontainers:postgresql'
-    testRuntimeOnly 'com.h2database:h2'
 }

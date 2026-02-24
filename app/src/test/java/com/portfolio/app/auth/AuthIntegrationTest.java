@@ -3,6 +3,7 @@ package com.portfolio.app.auth;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.portfolio.app.auth.dto.LoginRequest;
 import com.portfolio.app.auth.dto.SignupRequest;
+import com.portfolio.app.support.MariaDbContainerSupport;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -17,7 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-class AuthIntegrationTest {
+class AuthIntegrationTest extends MariaDbContainerSupport {
 
     @Autowired
     private MockMvc mockMvc;
