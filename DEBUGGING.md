@@ -164,6 +164,78 @@ git commit --amend --no-edit
 
 ---
 
+### 7. `.gitignore` Secrets 패턴 강화
+
+**배경**
+버그 6에서 `.secrets/` 추가로 즉각 대응했으나, 기존 패턴(`*-service-account.json`)이 실제 파일명(`oauth2-based-project-34e0235c144e.json`)을 커버하지 못했음. 추가적인 패턴 보완 필요.
+
+**기존 패턴의 한계**
+```
+*-service-account.json   ← oauth2-based-project-34e0235c144e.json 미탐지
+```
+
+**추가된 패턴**
+
+| 패턴 | 커버하는 파일 예시 |
+|---|---|
+| `.secrets/` | `.secrets/google/oauth2-based-project-xxxxx.json` |
+| `*service-account*.json` | `my-service-account.json` |
+| `*serviceaccount*.json` | `gcp-serviceaccount.json` |
+| `*-credentials.json` | `gcp-credentials.json` |
+| `*credentials*.json` | `my-credentials.json` |
+| `*-key.json` | `oauth2-based-project-key.json` |
+| `.env`, `.env.*` | `.env.production` |
+| `application-local.yml` | 로컬 전용 설정 파일 |
+
+**수정된 `.gitignore` Secrets 섹션**
+```gitignore
+# Secrets directory
+.secrets/
+
+# Key & certificate files
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.pkcs12
+
+# Google service account JSON
+*service-account*.json
+*serviceaccount*.json
+*-credentials.json
+*credentials*.json
+*-key.json
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Spring profile overrides with real values
+application-local.yml
+application-local.yaml
+application-secret.yml
+application-secret.yaml
+```
+
+**패턴 검증 (git check-ignore)**
+```bash
+$ git check-ignore -v .secrets/google/oauth2-based-project-34e0235c144e.json
+.gitignore:69:.secrets/    .secrets/google/oauth2-based-project-34e0235c144e.json  ✓
+
+$ git check-ignore -v credentials.json
+.gitignore:85:*credentials*.json    credentials.json  ✓
+
+$ git check-ignore -v service-account.json
+.gitignore:82:*service-account*.json    service-account.json  ✓
+
+$ git check-ignore -v oauth2-based-project-key.json
+.gitignore:86:*-key.json    oauth2-based-project-key.json  ✓
+```
+
+---
+
 ## 디버깅 흐름 요약
 
 ```
