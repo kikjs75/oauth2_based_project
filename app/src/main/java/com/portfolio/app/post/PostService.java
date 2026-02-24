@@ -2,6 +2,7 @@ package com.portfolio.app.post;
 
 import com.portfolio.app.post.dto.CreatePostRequest;
 import com.portfolio.app.post.dto.PostResponse;
+import com.portfolio.app.post.dto.UpdatePostRequest;
 import com.portfolio.app.user.User;
 import com.portfolio.app.user.UserRepository;
 import org.springframework.stereotype.Service;
@@ -40,5 +41,26 @@ public class PostService {
         return postRepository.findById(id)
                 .map(PostResponse::from)
                 .orElseThrow(() -> new IllegalArgumentException("Post not found: " + id));
+    }
+
+    @Transactional
+    public PostResponse updatePost(Long requesterId, boolean isAdmin, Long postId, UpdatePostRequest request) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("Post not found: " + postId));
+        if (!isAdmin && !post.getAuthor().getId().equals(requesterId)) {
+            throw new IllegalArgumentException("Not authorized to update this post");
+        }
+        post.update(request.title(), request.content());
+        return PostResponse.from(post);
+    }
+
+    @Transactional
+    public void deletePost(Long requesterId, boolean isAdmin, Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("Post not found: " + postId));
+        if (!isAdmin && !post.getAuthor().getId().equals(requesterId)) {
+            throw new IllegalArgumentException("Not authorized to delete this post");
+        }
+        postRepository.delete(post);
     }
 }

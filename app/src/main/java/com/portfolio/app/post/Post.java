@@ -33,6 +33,11 @@ public class Post {
         this.author = author;
     }
 
+    public void update(String title, String content) {
+        this.title = title;
+        this.content = content;
+    }
+
     public Long getId() { return id; }
     public String getTitle() { return title; }
     public String getContent() { return content; }
