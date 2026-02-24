@@ -193,14 +193,23 @@ JWT_SECRET=...
 DB_URL=jdbc:mariadb://localhost:3306/portfolio
 DB_USERNAME=portfolio
 DB_PASSWORD=portfolio
+
+# Google OAuth2 AWT + FCM
 GOOGLE_SERVICE_ACCOUNT_KEY_PATH=/path/to/service-account.json
 FCM_PROJECT_ID=my-firebase-project
+
+# Microsoft OAuth2 AWT
+MICROSOFT_CLIENT_ID=your-azure-app-client-id
+MICROSOFT_TENANT_ID=your-azure-tenant-id
+MICROSOFT_PRIVATE_KEY_PEM_PATH=/path/to/client-private-key.pem
+MICROSOFT_KEY_ID=your-certificate-thumbprint
 ```
 
 ## Security
 
 - No real credentials are committed to the repository
-- Service account JSON is loaded via file path only
+- Google service account JSON is loaded via file path only
+- Microsoft private key is loaded via PEM file path only
 - JWT secret via environment variable only
 
 ## Database Support
