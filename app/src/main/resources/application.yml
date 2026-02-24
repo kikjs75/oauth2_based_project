@@ -56,3 +56,10 @@ oauth2:
       service-account-key-path: ${GOOGLE_SERVICE_ACCOUNT_KEY_PATH:}
       scopes:
         - https://www.googleapis.com/auth/cloud-messaging
+    microsoft:
+      client-id: ${MICROSOFT_CLIENT_ID:}
+      tenant-id: ${MICROSOFT_TENANT_ID:}
+      private-key-pem-path: ${MICROSOFT_PRIVATE_KEY_PEM_PATH:}
+      key-id: ${MICROSOFT_KEY_ID:}
+      scopes:
+        - https://graph.microsoft.com/.default
