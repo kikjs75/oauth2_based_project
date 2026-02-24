@@ -10,6 +10,112 @@ A production-ready backend portfolio demonstrating:
 - DB-agnostic persistence (MariaDB/PostgreSQL + Flyway)
 - Observability: Micrometer, Prometheus, Grafana, Jaeger (OTLP)
 
+## Project Structure
+
+```
+oauth2_based_project/
+├── app/                                   ← 메인 Spring Boot 애플리케이션
+│   ├── build.gradle
+│   └── src/
+│       ├── main/
+│       │   ├── java/com/portfolio/app/
+│       │   │   ├── PortfolioApplication.java
+│       │   │   ├── admin/                         ← ADMIN: WRITER 역할 부여
+│       │   │   │   ├── AdminController.java
+│       │   │   │   └── AdminService.java
+│       │   │   ├── auth/                          ← 회원가입 / 로그인 / JWT 발급
+│       │   │   │   ├── AuthController.java
+│       │   │   │   ├── AuthService.java
+│       │   │   │   └── dto/
+│       │   │   │       ├── LoginRequest.java
+│       │   │   │       ├── SignupRequest.java
+│       │   │   │       └── TokenResponse.java
+│       │   │   ├── common/                        ← 공통 에러 응답 / 예외 핸들러
+│       │   │   │   ├── ErrorResponse.java
+│       │   │   │   └── GlobalExceptionHandler.java
+│       │   │   ├── config/                        ← FcmClient 빈 설정
+│       │   │   │   └── FcmClientConfig.java
+│       │   │   ├── post/                          ← 게시글 CRUD (WRITER/ADMIN 전용)
+│       │   │   │   ├── Post.java
+│       │   │   │   ├── PostController.java
+│       │   │   │   ├── PostRepository.java
+│       │   │   │   ├── PostService.java
+│       │   │   │   └── dto/
+│       │   │   │       ├── CreatePostRequest.java
+│       │   │   │       └── PostResponse.java
+│       │   │   ├── push/                          ← FCM 테스트 푸시 (WRITER/ADMIN)
+│       │   │   │   ├── PushController.java
+│       │   │   │   ├── PushService.java
+│       │   │   │   └── dto/
+│       │   │   │       └── PushRequest.java
+│       │   │   ├── security/                      ← JWT 필터 / Spring Security 설정
+│       │   │   │   ├── JwtAuthenticationFilter.java
+│       │   │   │   ├── JwtProperties.java
+│       │   │   │   ├── JwtTokenProvider.java
+│       │   │   │   └── SecurityConfig.java
+│       │   │   └── user/                          ← User 엔티티 / Repository
+│       │   │       ├── User.java
+│       │   │       └── UserRepository.java
+│       │   └── resources/
+│       │       ├── application.yml
+│       │       └── db/migration/                  ← Flyway {vendor} 자동 분기
+│       │           ├── mariadb/V1__init_schema.sql
+│       │           └── postgresql/V1__init_schema.sql
+│       └── test/
+│           ├── java/com/portfolio/app/
+│           │   ├── auth/
+│           │   │   ├── AuthIntegrationTest.java        ← MariaDB 통합 테스트 (signup/login)
+│           │   │   └── AuthPostgresIntegrationTest.java← PostgreSQL 통합 테스트 (signup/login)
+│           │   └── support/
+│           │       ├── MariaDbContainerSupport.java    ← GenericContainer + log wait + 브릿지 IP
+│           │       └── PostgresContainerSupport.java   ← GenericContainer + log wait + 브릿지 IP
+│           └── resources/
+│               ├── application-test.yml                ← MariaDB 테스트 프로파일
+│               └── application-test-pg.yml             ← PostgreSQL 테스트 프로파일
+│
+├── oauth2-awt-core/                       ← OAuth2 JWT Assertion 라이브러리 (재사용 가능)
+│   ├── build.gradle
+│   └── src/main/java/com/portfolio/oauth2/awt/core/
+│       ├── AssertionConfig.java           ← Google/Microsoft 설정 (Builder 패턴)
+│       ├── AssertionTokenClient.java      ← 공개 API 진입점
+│       ├── CachedTokenProvider.java       ← Caffeine 캐시 + ReentrantLock single-flight
+│       ├── JwtAssertionBuilder.java       ← RS256 JWT 서명 (Nimbus JOSE)
+│       ├── TokenEndpointClient.java       ← 토큰 엔드포인트 HTTP 호출 (RestClient)
+│       └── TokenResponse.java             ← 액세스 토큰 + 만료시각, isExpiredWithSkew() 헬퍼
+│   └── src/test/java/com/portfolio/oauth2/awt/core/
+│       ├── CachedTokenProviderTest.java   ← Mockito: 캐시 히트 시 단 1회만 fetch 검증
+│       └── JwtAssertionBuilderTest.java   ← 인메모리 RSA 키로 JWT 서명/파싱 검증
+│
+├── oauth2-awt-starter/                    ← Spring Boot Auto-configuration
+│   ├── build.gradle
+│   └── src/main/
+│       ├── java/com/portfolio/oauth2/awt/starter/
+│       │   ├── Oauth2AwtAutoConfiguration.java  ← @ConditionalOnExpression 조건부 빈 등록
+│       │   └── Oauth2AwtProperties.java         ← oauth2.awt.* 설정 바인딩
+│       └── resources/META-INF/spring/
+│           └── org.springframework.boot.autoconfigure.AutoConfiguration.imports  ← Spring Boot 자동 구성 등록 파일
+│
+├── fcm-client/                            ← FCM HTTP v1 클라이언트
+│   ├── build.gradle
+│   └── src/main/java/com/portfolio/fcm/
+│       ├── FcmClient.java                 ← Bearer 토큰 획득 후 FCM API 호출, Micrometer Timer
+│       ├── FcmConfig.java                 ← fcm.* 설정 바인딩
+│       └── FcmMessage.java                ← FCM HTTP v1 메시지 페이로드
+│
+├── monitoring/                            ← 모니터링 스택 설정
+│   ├── prometheus/prometheus.yml          ← /actuator/prometheus 스크레이핑
+│   └── grafana/provisioning/
+│       ├── datasources/prometheus.yml     ← Prometheus 데이터소스 자동 프로비저닝
+│       └── dashboards/dashboard.yml       ← 대시보드 프로바이더 설정
+│
+├── build.gradle          ← 루트 공통 의존성 / BOM 관리
+├── settings.gradle       ← 멀티모듈 서브프로젝트 선언
+├── docker-compose.yml    ← MariaDB, PostgreSQL, Prometheus, Grafana, Jaeger, App 전체 스택
+├── Dockerfile            ← 멀티스테이지 빌드 (Gradle → JRE 17 최소 이미지)
+├── gradlew               ← Gradle Wrapper 실행 스크립트
+└── .env.example          ← 환경변수 템플릿 (실제 secrets 미포함)
+```
+
 ## Modules
 
 | Module | Description |
