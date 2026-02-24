@@ -1,14 +1,21 @@
-# Portfolio Backend — Production-Grade Spring Boot
+# Portfolio — Production-Grade Spring Boot + React
 
 > **GitHub**: https://github.com/kikjs75/oauth2_based_project
 
-A production-ready backend portfolio demonstrating:
+A full-stack portfolio project demonstrating production-ready practices.
+
+**Backend** (Spring Boot multi-module):
 - OAuth2 JWT Assertion client (Google/Microsoft)
+- Google OAuth2 Authorization Code login
 - FCM HTTP v1 push notifications
 - JWT-based authentication with role escalation
 - Multi-module Gradle architecture
 - DB-agnostic persistence (MariaDB/PostgreSQL + Flyway)
 - Observability: Micrometer, Prometheus, Grafana, Jaeger (OTLP)
+
+**Frontend** (React + Vite):
+- 회원가입 / 로그인 (ID/PW + Google OAuth2)
+- 게시판 목록 / 상세 / 등록 / 수정 / 삭제
 
 ## Project Structure
 
@@ -108,6 +115,26 @@ oauth2_based_project/
 │       ├── datasources/prometheus.yml     ← Prometheus 데이터소스 자동 프로비저닝
 │       └── dashboards/dashboard.yml       ← 대시보드 프로바이더 설정
 │
+├── frontend/                              ← React 프론트엔드 (Vite)
+│   ├── package.json
+│   ├── vite.config.js                     ← port 3000, /api 프록시 → localhost:8080
+│   ├── index.html
+│   └── src/
+│       ├── main.jsx
+│       ├── App.jsx                        ← React Router 라우팅 정의
+│       ├── index.css
+│       ├── api/
+│       │   └── client.js                  ← Axios 인스턴스 + JWT 인터셉터 + 헬퍼
+│       ├── components/
+│       │   └── Navbar.jsx
+│       └── pages/
+│           ├── SignupPage.jsx             ← ID/PW 회원가입
+│           ├── LoginPage.jsx             ← ID/PW 로그인 + Google 로그인 버튼
+│           ├── CallbackPage.jsx          ← OAuth2 리다이렉트 토큰 처리
+│           ├── PostListPage.jsx          ← 게시글 목록
+│           ├── PostDetailPage.jsx        ← 게시글 상세 + 수정/삭제 버튼
+│           └── PostFormPage.jsx          ← 게시글 작성/수정 폼
+│
 ├── build.gradle          ← 루트 공통 의존성 / BOM 관리
 ├── settings.gradle       ← 멀티모듈 서브프로젝트 선언
 ├── docker-compose.yml    ← MariaDB, PostgreSQL, Prometheus, Grafana, Jaeger, App 전체 스택
@@ -124,18 +151,21 @@ oauth2_based_project/
 | `oauth2-awt-core` | OAuth2 JWT Bearer assertion library |
 | `oauth2-awt-starter` | Spring Boot auto-configuration for oauth2-awt-core |
 | `fcm-client` | FCM HTTP v1 API client |
+| `frontend` | React 18 + Vite SPA |
 
 ## Implementation
 
 | 항목 | 내용 |
 |---|---|
 | **멀티모듈** | `app`, `oauth2-awt-core`, `oauth2-awt-starter`, `fcm-client` |
-| **JWT 인증** | Nimbus JOSE HS256, signup/login/Google OAuth2, role-based 접근 제어 |
+| **인증** | ID/PW 회원가입·로그인 + Google OAuth2 Authorization Code, JWT(HS256) 발급 |
 | **역할 관리** | USER → WRITER 승격 (ADMIN only), 게시판 WRITER/ADMIN 전용 |
+| **게시판** | 목록/상세/등록/수정/삭제, 본인 글 또는 ADMIN만 수정·삭제 가능 |
 | **OAuth2 AWT** | RS256 JWT assertion, Caffeine 캐시, single-flight, retry |
 | **FCM** | HTTP v1 API, Micrometer Timer 메트릭 |
 | **DB** | MariaDB(기본)/PostgreSQL(옵션), Flyway `{vendor}` 자동 분기, DB-agnostic |
 | **모니터링** | Prometheus + Grafana + Jaeger (docker-compose) |
+| **프론트엔드** | React 18 + Vite, React Router v6, Axios, localStorage JWT |
 | **보안** | 실 credentials 미포함, 환경변수/파일 경로만 사용 |
 | **테스트** | Testcontainers 통합테스트 (MariaDB/PostgreSQL), Mockito 단위테스트 |
 
@@ -143,9 +173,10 @@ oauth2_based_project/
 
 ### Prerequisites
 - Java 17+
+- Node.js 18+
 - Docker & Docker Compose
 
-### Run with Docker Compose
+### Run with Docker Compose (백엔드 전체 스택)
 ```bash
 # Copy and configure environment
 cp .env.example .env
@@ -164,26 +195,79 @@ docker-compose up -d
 
 ### Run locally (development)
 ```bash
-# Start dependencies only
+# 1. 의존 서비스 기동 (MariaDB + Jaeger)
 docker-compose up -d mariadb jaeger
 
-# Run the app
+# 2. 백엔드 실행 (http://localhost:8080)
 ./gradlew :app:bootRun
+
+# 3. 프론트엔드 실행 (별도 터미널, http://localhost:3000)
+cd frontend
+npm install
+npm run dev
 ```
+
+> 프론트엔드는 `/api` 요청을 `http://localhost:8080`으로 프록시합니다.
 
 ## API Endpoints
 
+### 인증
 | Method | Path | Role | Description |
 |---|---|---|---|
-| POST | /api/auth/signup | Public | Register a new user |
-| POST | /api/auth/login | Public | Obtain JWT token |
-| GET | /oauth2/authorization/google | Public | Start Google OAuth2 login flow |
-| GET | /login/oauth2/code/google | Public | Google OAuth2 callback (handled by Spring Security) |
-| POST | /api/admin/users/{id}/grant-writer | ADMIN | Promote user to WRITER |
-| POST | /api/posts | WRITER, ADMIN | Create a post |
-| GET | /api/posts | Authenticated | List all posts |
-| GET | /api/posts/{id} | Authenticated | Get a post |
-| POST | /api/push/test | WRITER, ADMIN | Send test FCM push |
+| POST | /api/auth/signup | Public | ID/PW 회원가입 |
+| POST | /api/auth/login | Public | ID/PW 로그인 → JWT 반환 |
+| GET | /oauth2/authorization/google | Public | Google OAuth2 로그인 시작 |
+| GET | /login/oauth2/code/google | Public | Google OAuth2 콜백 (Spring Security 자동 처리) |
+
+### 관리자
+| Method | Path | Role | Description |
+|---|---|---|---|
+| POST | /api/admin/users/{id}/grant-writer | ADMIN | 사용자를 WRITER로 승격 |
+
+### 게시판
+| Method | Path | Role | Description |
+|---|---|---|---|
+| GET | /api/posts | Authenticated | 게시글 목록 조회 |
+| GET | /api/posts/{id} | Authenticated | 게시글 상세 조회 |
+| POST | /api/posts | WRITER, ADMIN | 게시글 등록 |
+| PUT | /api/posts/{id} | WRITER(본인), ADMIN | 게시글 수정 |
+| DELETE | /api/posts/{id} | WRITER(본인), ADMIN | 게시글 삭제 |
+
+### 푸시
+| Method | Path | Role | Description |
+|---|---|---|---|
+| POST | /api/push/test | WRITER, ADMIN | FCM 테스트 푸시 발송 |
+
+## Frontend
+
+### 화면 구성
+
+| 경로 | 화면 | 접근 |
+|---|---|---|
+| `/signup` | 회원가입 | 비로그인 |
+| `/login` | 로그인 (ID/PW + Google 버튼) | 비로그인 |
+| `/callback` | OAuth2 토큰 처리 (자동 이동) | — |
+| `/posts` | 게시글 목록 | 로그인 |
+| `/posts/:id` | 게시글 상세 + 수정/삭제 버튼 | 로그인 |
+| `/posts/new` | 게시글 작성 | WRITER, ADMIN |
+| `/posts/:id/edit` | 게시글 수정 | WRITER(본인), ADMIN |
+
+### 권한별 UI 동작
+
+- 글쓰기 버튼: WRITER 또는 ADMIN 역할일 때만 목록 화면에 노출
+- 수정/삭제 버튼: 본인이 작성한 글이거나 ADMIN일 때만 상세 화면에 노출
+- Google OAuth2 로그인 성공 시 `/callback?token=<JWT>` 로 리다이렉트되어 토큰을 localStorage에 저장 후 게시판으로 이동
+
+### 기술 스택
+
+| 항목 | 내용 |
+|---|---|
+| 빌드 도구 | Vite 5 |
+| 프레임워크 | React 18 |
+| 라우팅 | React Router v6 |
+| HTTP 클라이언트 | Axios (JWT Bearer 인터셉터) |
+| 상태 관리 | localStorage (JWT 저장) |
+| 스타일 | 순수 CSS (외부 UI 라이브러리 없음) |
 
 ## Monitoring
 
