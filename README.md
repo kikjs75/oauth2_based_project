@@ -117,7 +117,7 @@ oauth2_based_project/
 │
 ├── frontend/                              ← React 프론트엔드 (Vite)
 │   ├── package.json
-│   ├── vite.config.js                     ← port 3000, /api 프록시 → localhost:8080
+│   ├── vite.config.js                     ← port 8081, /api 프록시 → localhost:8080
 │   ├── index.html
 │   └── src/
 │       ├── main.jsx
@@ -176,15 +176,12 @@ oauth2_based_project/
 - Node.js 18+
 - Docker & Docker Compose
 
-### Run with Docker Compose (백엔드 전체 스택)
+### Run with Docker Compose (전체 스택)
 ```bash
-# Copy and configure environment
 cp .env.example .env
-# Edit .env with your values:
-#   JWT_SECRET, FCM_PROJECT_ID
-#   GOOGLE_SERVICE_ACCOUNT_KEY_PATH=/host/path/to/service-account.json
+# .env 필수 항목: JWT_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+# 선택 항목: FCM_PROJECT_ID, GOOGLE_SERVICE_ACCOUNT_KEY_PATH
 
-# Start all services (MariaDB + Prometheus + Grafana + Jaeger + App)
 docker-compose up -d
 ```
 
@@ -192,19 +189,6 @@ docker-compose up -d
 > `.env`의 `GOOGLE_SERVICE_ACCOUNT_KEY_PATH`(호스트 경로)가 docker-compose volume으로
 > 컨테이너 내부 `/secrets/google-service-account.json`에 자동 마운트됩니다.
 > 미설정 시 FCM 빈이 비활성화되어 앱은 정상 기동되며, `/api/push/test`만 비활성 상태가 됩니다.
-
-### Run with Docker Compose (전체 스택 — 백엔드 + 프론트엔드)
-```bash
-cp .env.example .env
-# .env 에서 JWT_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET 설정
-
-docker-compose up -d
-```
-
-| 서비스 | URL |
-|---|---|
-| 프론트엔드 | http://localhost:8081 |
-| 백엔드 API | http://localhost:8080 |
 
 ### Run locally (development)
 ```bash
@@ -282,15 +266,17 @@ npm run dev
 | 상태 관리 | localStorage (JWT 저장) |
 | 스타일 | 순수 CSS (외부 UI 라이브러리 없음) |
 
-## Monitoring
+## 포트 정리
 
-| Service | URL |
-|---|---|
-| 프론트엔드 | http://localhost:8081 |
-| 백엔드 API | http://localhost:8080 |
-| Prometheus | http://localhost:9090 |
-| Grafana | http://localhost:3000 (admin/admin) |
-| Jaeger | http://localhost:16686 |
+| 서비스 | URL | 비고 |
+|---|---|---|
+| 프론트엔드 | http://localhost:8081 | React (Docker: nginx, Dev: Vite) |
+| 백엔드 API | http://localhost:8080 | Spring Boot |
+| Prometheus | http://localhost:9090 | 메트릭 수집 |
+| Grafana | http://localhost:3000 | admin / admin |
+| Jaeger | http://localhost:16686 | 분산 트레이싱 |
+
+## Monitoring
 
 ## Configuration
 
@@ -305,7 +291,7 @@ DB_PASSWORD=portfolio
 # Google OAuth2 Login (Authorization Code flow)
 GOOGLE_CLIENT_ID=your-google-oauth2-client-id
 GOOGLE_CLIENT_SECRET=your-google-oauth2-client-secret
-OAUTH2_REDIRECT_URI=http://localhost:3000/callback
+OAUTH2_REDIRECT_URI=http://localhost:8081/callback
 
 # Google OAuth2 AWT + FCM
 # GOOGLE_SERVICE_ACCOUNT_KEY_PATH: 호스트 파일 경로 → docker-compose가 컨테이너 내부로 마운트
@@ -322,7 +308,7 @@ MICROSOFT_KEY_ID=your-certificate-thumbprint
 | 항목 | 로컬 개발 (`bootRun`) | Docker Compose |
 |---|---|---|
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | `.env`에 설정 (미설정 시 OAuth2 로그인 불가, 앱 기동 O) | 동일 |
-| `OAUTH2_REDIRECT_URI` | 프론트엔드 콜백 URL (기본: `http://localhost:3000/callback`) | 동일 |
+| `OAUTH2_REDIRECT_URI` | 프론트엔드 콜백 URL (기본: `http://localhost:8081/callback`) | 동일 |
 | `GOOGLE_SERVICE_ACCOUNT_KEY_PATH` | 호스트 경로 직접 참조 | 호스트 경로 → `/secrets/google-service-account.json` 자동 마운트 |
 | FCM 미설정 시 | 앱 기동 O, push 엔드포인트만 비활성 | 동일 |
 | Microsoft | 선택 사항, 미설정 시 빈 비활성 | 동일 |
