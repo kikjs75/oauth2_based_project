@@ -1,0 +1,28 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  flyway:
+    enabled: true
+
+app:
+  jwt:
+    secret: test-secret-key-at-least-256-bits-long-for-hmac-sha256
+    expiration-ms: 3600000
+
+fcm:
+  project-id: test-project
+
+oauth2:
+  awt:
+    google:
+      service-account-key-path: ""
+
+management:
+  tracing:
+    sampling:
+      probability: 0.0
