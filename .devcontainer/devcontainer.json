@@ -16,6 +16,13 @@
   "features": {
     "ghcr.io/devcontainers/features/aws-cli:1": {},
     "ghcr.io/devcontainers/features/python:1": {},
+
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "17",
+      "installGradle": true,
+      "installMaven": true
+    },
+
     "ghcr.io/devcontainers/features/common-utils:2": {
       "installSudo": "true",
       "username": "node"
@@ -24,15 +31,23 @@
   "containerEnv": {
     "PS1": "\\u@\\h:\\w# ",
     "LANG": "ko_KR.UTF-8",
-    "LC_ALL": "ko_KR.UTF-8"
+    "LC_ALL": "ko_KR.UTF-8",
+
+    "NODE_OPTIONS": "--max-old-space-size=4096",
+    "CLAUDE_CONFIG_DIR": "/home/node/.claude",
+    "POWERLEVEL9K_DISABLE_GITSTATUS": "true"
   },
- "customizations": {
+  "customizations": {
     "vscode": {
       "extensions": [
         "anthropic.claude-code",
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
-        "eamodio.gitlens"
+        "eamodio.gitlens",
+
+        "vscjava.vscode-java-pack",
+        "vscjava.vscode-maven",
+        "vscjava.vscode-gradle"
       ],
       "settings": {
         "editor.formatOnSave": true,
@@ -53,7 +68,6 @@
       }
     }
   },
-  "forwardPorts": [3000, 8000],
   "remoteUser": "node",
   "mounts": [
     "source=claude-code-bashhistory-${devcontainerId},target=/commandhistory,type=volume",
@@ -61,13 +75,10 @@
     "source=node_modules,target=/workspaces/project/node_modules,type=volume",
     "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
   ],
-  "containerEnv": {
-    "NODE_OPTIONS": "--max-old-space-size=4096",
-    "CLAUDE_CONFIG_DIR": "/home/node/.claude",
-    "POWERLEVEL9K_DISABLE_GITSTATUS": "true"
-  },
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
   "workspaceFolder": "/workspace",
   "postStartCommand": "sudo /usr/local/bin/init-firewall.sh",
-  "waitFor": "onCreateCommand"
+  "waitFor": "onCreateCommand",
+
+  "postCreateCommand": "java -version && gradle -v && mvn -v"
 }

@@ -3,6 +3,7 @@ dependencies {
     implementation 'org.springframework:spring-web'
     implementation 'org.slf4j:slf4j-api'
     implementation 'io.micrometer:micrometer-core'
+    compileOnly 'org.springframework.boot:spring-boot-autoconfigure'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.wiremock:wiremock-standalone:3.3.1'

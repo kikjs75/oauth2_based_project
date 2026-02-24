@@ -5,7 +5,7 @@ import com.portfolio.oauth2.awt.core.AssertionTokenClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
@@ -19,7 +19,7 @@ public class Oauth2AwtAutoConfiguration {
     private static final Logger log = LoggerFactory.getLogger(Oauth2AwtAutoConfiguration.class);
 
     @Bean(name = "googleAssertionTokenClient")
-    @ConditionalOnProperty(prefix = "oauth2.awt.google", name = "service-account-key-path")
+    @ConditionalOnExpression("'${oauth2.awt.google.service-account-key-path:}' != ''")
     public AssertionTokenClient googleAssertionTokenClient(Oauth2AwtProperties props) throws Exception {
         Oauth2AwtProperties.Google google = props.google();
         String pemContent = readServiceAccountKeyAsPem(google.serviceAccountKeyPath());
@@ -41,7 +41,7 @@ public class Oauth2AwtAutoConfiguration {
     }
 
     @Bean(name = "microsoftAssertionTokenClient")
-    @ConditionalOnProperty(prefix = "oauth2.awt.microsoft", name = "client-id")
+    @ConditionalOnExpression("'${oauth2.awt.microsoft.client-id:}' != ''")
     public AssertionTokenClient microsoftAssertionTokenClient(Oauth2AwtProperties props) throws Exception {
         Oauth2AwtProperties.Microsoft ms = props.microsoft();
         String pemContent = new String(Files.readAllBytes(Paths.get(ms.privateKeyPemPath())));

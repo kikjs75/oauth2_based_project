@@ -17,11 +17,6 @@ app:
 fcm:
   project-id: test-project
 
-oauth2:
-  awt:
-    google:
-      service-account-key-path: ""
-
 management:
   tracing:
     sampling:
