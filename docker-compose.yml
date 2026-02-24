@@ -1,0 +1,102 @@
+version: '3.9'
+
+services:
+  mariadb:
+    image: mariadb:11.2
+    container_name: portfolio-mariadb
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: portfolio
+      MARIADB_USER: portfolio
+      MARIADB_PASSWORD: portfolio
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:16.2
+    container_name: portfolio-postgres
+    profiles: ["postgres"]
+    environment:
+      POSTGRES_DB: portfolio
+      POSTGRES_USER: portfolio
+      POSTGRES_PASSWORD: portfolio
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U portfolio"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  prometheus:
+    image: prom/prometheus:v2.50.1
+    container_name: portfolio-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    depends_on:
+      - app
+
+  grafana:
+    image: grafana/grafana:10.3.3
+    container_name: portfolio-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.55
+    container_name: portfolio-jaeger
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: portfolio-app
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: jdbc:mariadb://mariadb:3306/portfolio
+      DB_USERNAME: portfolio
+      DB_PASSWORD: portfolio
+      DB_DRIVER: org.mariadb.jdbc.Driver
+      HIBERNATE_DIALECT: org.hibernate.dialect.MariaDBDialect
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production-use-env-var}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      OTEL_SERVICE_NAME: portfolio-app
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+volumes:
+  mariadb-data:
+  postgres-data:
+  grafana-data:
