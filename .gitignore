@@ -1,32 +1,102 @@
+# ===========================
 # Gradle
+# ===========================
 .gradle/
 build/
 !gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+!**/src/main/**/build/
+!**/src/test/**/build/
 
-# IDE
+# ===========================
+# IntelliJ IDEA
+# ===========================
 .idea/
+*.iws
 *.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+# ===========================
+# Eclipse
+# ===========================
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+# ===========================
+# VS Code
+# ===========================
 .vscode/
-*.classpath
-*.project
-*.settings/
 
+# ===========================
 # Java
+# ===========================
 *.class
-*.jar
-!gradle/wrapper/gradle-wrapper.jar
 
+# ===========================
 # Logs
+# ===========================
 *.log
+logs/
+spring-shell.log
 
+# ===========================
 # OS
+# ===========================
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# Secrets
+# ===========================
+# Secrets & Credentials (NEVER commit)
+# ===========================
+
+# Secrets directory
+.secrets/
+
+# Key & certificate files
 *.pem
+*.key
 *.p12
+*.pfx
 *.jks
-*-service-account.json
+*.pkcs12
+
+# Google service account JSON
+# Pattern covers: *-service-account.json, *serviceaccount*.json,
+#                 oauth2-based-project-xxxxx.json, *-key.json, etc.
+*service-account*.json
+*serviceaccount*.json
+*-credentials.json
+*credentials*.json
+*-key.json
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Spring profile overrides with real values
 application-local.yml
+application-local.yaml
 application-secret.yml
+application-secret.yaml
+
+# ===========================
+# Docker
+# ===========================
+docker/volumes/
