@@ -1,6 +1,7 @@
 package com.portfolio.fcm;
 
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Represents an FCM HTTP v1 message payload.
@@ -11,6 +12,10 @@ public record FcmMessage(
         String body,
         Map<String, String> data
 ) {
+    public FcmMessage {
+        Objects.requireNonNull(token, "token must not be null");
+    }
+
     public Map<String, Object> toRequestBody() {
         Map<String, Object> notification = Map.of("title", title, "body", body);
         Map<String, Object> message = new java.util.LinkedHashMap<>();
