@@ -31,7 +31,18 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'org.wiremock:wiremock-standalone:3.3.1'
-    testImplementation 'org.testcontainers:junit-jupiter'
-    testImplementation 'org.testcontainers:mariadb'
-    testImplementation 'org.testcontainers:postgresql'
+
+    testImplementation platform("org.testcontainers:testcontainers-bom:1.21.4")
+    testImplementation "org.testcontainers:junit-jupiter"
+    testImplementation "org.testcontainers:mariadb"
+    testImplementation "org.testcontainers:postgresql"
+    testImplementation "org.testcontainers:jdbc"
+    testImplementation "org.testcontainers:database-commons"
+}
+
+// Gradle forks the test JVM and does not inherit shell env vars automatically.
+// DOCKER_HOST must be set explicitly so Testcontainers can reach Docker Desktop on Mac.
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+    environment "DOCKER_HOST", "unix://${System.getProperty("user.home")}/.docker/run/docker.sock"
 }
