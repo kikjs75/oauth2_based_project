@@ -173,6 +173,88 @@ BUILD SUCCESSFUL in 29s
 | OAuth2 clientId 빈 문자열 | 테스트 YML에 override 없어 `OAuth2ClientProperties` 검증 실패 | `application-test*.yml`에 더미 OAuth2 값 추가 |
 | HostOS bridge IP 접근 불가 | Mac Docker는 VM 내부 실행, bridge IP(172.17.x.x) 호스트에서 미도달 | `/.dockerenv` 존재 여부로 환경 감지 → HostOS에서 `getMappedPort()` 사용 |
 
+## FcmClientTest 재작성 (2026-02-25)
+
+### 발견된 문제 7가지
+
+| # | 문제 | 분류 |
+|---|---|---|
+| 1 | `resolvedSendEndpoint` 테스트가 `FcmClientTest`에 혼재 (SRP 위반) | 설계 |
+| 2 | `lenient()` 전체 남용 — SRP 위반의 부작용 | 설계 |
+| 3 | Bearer 토큰 헤더 검증 누락 | 누락 |
+| 4 | `send_fetchesAccessToken` + `send_postsToFcmApi` 중복 | 중복 |
+| 5 | 실패 케이스 테스트 없음 (토큰 예외, FCM API 오류) | 누락 |
+| 6 | `FcmMessage(null, ...)` → `FcmClient.doSend()`의 `token().substring()` NPE | 버그 |
+| 7 | `FcmConfig(null, null)` → URL에 "null" 포함 | 버그 |
+
+### 수정 내용
+
+- `FcmMessage` — compact constructor에 `Objects.requireNonNull(token, ...)` 추가
+- `FcmConfig` — compact constructor에 `projectId == null && sendEndpoint == null` 검증 추가
+- `FcmConfigTest` — `resolvedSendEndpoint` 테스트 2개 + constructor 검증 1개 신규 파일
+- `FcmClientTest` — 전면 재작성 (아래 참조)
+
+### FcmClientTest 디버깅 흐름
+
+```
+시도 1: lenient().given(...) 스타일 사용
+  → LenientStubber에 given()이 없음 (Mockito 5.7.0)
+  → LenientStubber.when() 만 존재 (BDDMockito 스타일 미지원)
+
+시도 2: given(bodySpec.body(any())).willReturn(bodySpec)
+  → PotentialStubbingProblem: "body(null) ≠ body({...map...})"
+  → any() 가 null을 반환 → Java가 body(StreamingHttpOutputMessage.Body) 오버로드 선택
+  → 실제 호출은 Map 인수 → body(Object) 오버로드 선택 → 오버로드 불일치
+
+시도 3: willReturn(bodySpec).given(bodySpec).body(any())  [BDD doReturn 스타일]
+  → 동일한 PotentialStubbingProblem — 근본 원인(오버로드 선택)이 같으므로 해결 안 됨
+
+시도 4: given(bodySpec.body((Object) any())).willReturn(bodySpec)
+  → (Object) 캐스트로 컴파일 타임 오버로드를 body(Object)로 강제
+  → BUILD SUCCESSFUL ✓ 9/9 PASS
+```
+
+### 핵심 원인 — Spring 6 `body()` 오버로드 문제
+
+Spring 6 `RestClient.RequestBodySpec`의 `body()` 오버로드:
+
+```
+body(Object)                       ← 실제 코드가 사용 (Map 인수)
+body(StreamingHttpOutputMessage.Body)  ← null 인수 시 Java가 선택 (더 구체적인 타입)
+```
+
+Java 오버로드 해석 규칙: 인수의 컴파일 타임 타입이 `null`이면 가장 구체적인(specific) 타입을 선택.
+`StreamingHttpOutputMessage.Body`가 `Object`보다 더 구체적이므로 `body(null)` → `body(Body)` 선택.
+
+**수정**: `(Object)` 캐스트로 컴파일 타임 타입을 `Object`로 고정 → `body(Object)` 오버로드 강제.
+
+```java
+// 잘못된 방법 — body(StreamingHttpOutputMessage.Body) 오버로드 선택됨
+given(bodySpec.body(any())).willReturn(bodySpec);
+
+// 올바른 방법 — body(Object) 오버로드 명시적 선택
+given(bodySpec.body((Object) any())).willReturn(bodySpec);
+```
+
+### `lenient()` 남용 해결 방법
+
+`@BeforeEach`에서 `stubRestClientChain()` 호출을 제거하고, 체인이 필요한 테스트에서만 명시적으로 호출.
+→ 토큰 예외 / null 토큰 테스트에서 RestClient 스텁이 설정되지 않으므로 `lenient()` 불필요.
+
+### `LenientStubber.given()` 미존재 (Mockito 5.7.0)
+
+`BDDMockito.lenient()`는 `LenientStubber`를 반환하며, `LenientStubber`에는 `when()`만 존재:
+
+```java
+// 컴파일 오류 — LenientStubber에 given() 없음
+lenient().given(mock.method()).willReturn(value);   // ✗
+
+// 올바른 BDD lenient 패턴 (Mockito 5.7.0)
+// → 구조를 바꿔서 lenient() 자체가 불필요하게 만드는 것이 정답
+```
+
+---
+
 ## 커밋 내용 (2026-02-25)
 
 ```
@@ -189,6 +271,10 @@ BUILD SUCCESSFUL in 29s
 | `application-test-pg.yml` | OAuth2 더미값 추가 |
 | `build.gradle` | `ext['testcontainers.version']` 추가 (루트) |
 | `DEBUGGING.md` | 2026-02-25 결과 및 수정 이력 기록 |
+| `FcmMessage.java` | compact constructor 추가 — null token 즉시 NPE |
+| `FcmConfig.java` | compact constructor 추가 — projectId·sendEndpoint 둘 다 null 시 IAE |
+| `FcmClientTest.java` | 전면 재작성 — SRP, 오버로드 수정, 실패 케이스 추가 |
+| `FcmConfigTest.java` | 신규 — resolvedSendEndpoint 및 constructor 검증 |
 
 ---
 

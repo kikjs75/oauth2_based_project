@@ -436,3 +436,53 @@ Testcontainers BOM 1.21.4를 사용하여 이 버전을 지원하며, `app/build
 # 단위 테스트만 (Docker 불필요)
 ./gradlew :app:test --tests "com.portfolio.app.security.*" --tests "com.portfolio.app.admin.*" --tests "com.portfolio.app.post.*" --tests "com.portfolio.app.push.*" --tests "com.portfolio.app.auth.GoogleOAuth2UserServiceTest" --tests "com.portfolio.app.auth.OAuth2AuthenticationSuccessHandlerTest"
 ```
+
+### Gradle 명령어 레퍼런스
+
+**전체 / 모듈별 실행**
+
+```bash
+# 전체 (모든 모듈)
+./gradlew test
+
+# 모듈별 개별 실행
+./gradlew :app:test
+./gradlew :fcm-client:test
+./gradlew :oauth2-awt-core:test
+```
+
+**주요 옵션**
+
+| 옵션 | 설명 |
+|---|---|
+| `--no-daemon` | 백그라운드 데몬 없이 새 JVM으로 실행. 데몬 캐시 영향 배제할 때 사용 |
+| `--refresh-dependencies` | `~/.gradle/caches` 무시하고 원격 저장소에서 의존성 재다운로드 |
+| `-i` | INFO 레벨 로그 출력 (Docker 연결 흐름, 테스트 상세 등 확인 시) |
+
+```bash
+# 데몬 제외, 캐시 무시, 상세 로그
+./gradlew :app:test --no-daemon --refresh-dependencies -i
+```
+
+**의존성 분석**
+
+```bash
+# 특정 configuration 전체 의존성 트리
+./gradlew :app:dependencies --configuration testRuntimeClasspath
+
+# 특정 라이브러리 유입 경로 추적 (버전 충돌 분석)
+./gradlew :app:dependencyInsight --dependency testcontainers --configuration testRuntimeClasspath
+
+# 의존성 강제 재다운로드
+./gradlew :app:dependencies --configuration testRuntimeClasspath --refresh-dependencies
+```
+
+**정리**
+
+```bash
+# 빌드 산출물 삭제
+./gradlew clean
+
+# 실행 중인 Gradle 데몬 모두 종료
+./gradlew --stop
+```
