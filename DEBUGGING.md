@@ -173,6 +173,23 @@ BUILD SUCCESSFUL in 29s
 | OAuth2 clientId 빈 문자열 | 테스트 YML에 override 없어 `OAuth2ClientProperties` 검증 실패 | `application-test*.yml`에 더미 OAuth2 값 추가 |
 | HostOS bridge IP 접근 불가 | Mac Docker는 VM 내부 실행, bridge IP(172.17.x.x) 호스트에서 미도달 | `/.dockerenv` 존재 여부로 환경 감지 → HostOS에서 `getMappedPort()` 사용 |
 
+## 커밋 내용 (2026-02-25)
+
+```
+8f6c812 test: fix Testcontainers integration tests for Docker Desktop 29.x on Mac
+```
+
+| 파일 | 변경 내용 |
+|---|---|
+| `app/build.gradle` | Testcontainers BOM 1.21.4, `DOCKER_HOST` 환경변수 명시, 주석 정리 |
+| `app/src/test/resources/testcontainers.properties` | `UnixSocketClientProviderStrategy` 등록 (신규) |
+| `MariaDbContainerSupport.java` | `WaitAllStrategy` + HostOS `getMappedPort()` 지원 |
+| `PostgresContainerSupport.java` | HostOS `getMappedPort()` 지원 |
+| `application-test.yml` | OAuth2 더미값 추가 |
+| `application-test-pg.yml` | OAuth2 더미값 추가 |
+| `build.gradle` | `ext['testcontainers.version']` 추가 (루트) |
+| `DEBUGGING.md` | 2026-02-25 결과 및 수정 이력 기록 |
+
 ---
 
 # Debugging Log — 2026-02-24
