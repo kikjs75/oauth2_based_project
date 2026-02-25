@@ -77,17 +77,27 @@ oauth2_based_project/
 │       │               └── V2__add_oauth2_provider.sql
 │       └── test/
 │           ├── java/com/portfolio/app/
+│           │   ├── admin/
+│           │   │   └── AdminServiceTest.java                ← Mockito: WRITER 역할 부여 단위테스트
 │           │   ├── auth/
 │           │   │   ├── AuthIntegrationTest.java             ← MariaDB 통합 테스트 (signup/login)
 │           │   │   ├── AuthPostgresIntegrationTest.java     ← PostgreSQL 통합 테스트 (signup/login)
 │           │   │   ├── GoogleOAuth2UserServiceTest.java     ← Mockito: find-or-create 3개 케이스
 │           │   │   └── OAuth2AuthenticationSuccessHandlerTest.java ← JWT 발급 및 리다이렉트 검증
+│           │   ├── post/
+│           │   │   └── PostServiceTest.java                 ← Mockito: 게시글 CRUD 권한 단위테스트
+│           │   ├── push/
+│           │   │   └── PushServiceTest.java                 ← Mockito: FCM 호출 단위테스트
+│           │   ├── security/
+│           │   │   ├── JwtAuthenticationFilterTest.java     ← JWT 필터 단위테스트
+│           │   │   └── JwtTokenProviderTest.java            ← JWT 발급/검증 단위테스트
 │           │   └── support/
-│           │       ├── MariaDbContainerSupport.java         ← GenericContainer + log wait + 브릿지 IP
-│           │       └── PostgresContainerSupport.java        ← GenericContainer + log wait + 브릿지 IP
+│           │       ├── MariaDbContainerSupport.java         ← GenericContainer + WaitAllStrategy + HostOS getMappedPort
+│           │       └── PostgresContainerSupport.java        ← GenericContainer + log wait + HostOS getMappedPort
 │           └── resources/
 │               ├── application-test.yml                     ← MariaDB 테스트 프로파일
-│               └── application-test-pg.yml                  ← PostgreSQL 테스트 프로파일
+│               ├── application-test-pg.yml                  ← PostgreSQL 테스트 프로파일
+│               └── testcontainers.properties                ← Docker 소켓 / 클라이언트 전략 고정
 │
 ├── oauth2-awt-core/                       ← OAuth2 JWT Assertion 라이브러리 (재사용 가능)
 │   ├── build.gradle
@@ -113,10 +123,12 @@ oauth2_based_project/
 │
 ├── fcm-client/                            ← FCM HTTP v1 클라이언트
 │   ├── build.gradle
-│   └── src/main/java/com/portfolio/fcm/
-│       ├── FcmClient.java                 ← Bearer 토큰 획득 후 FCM API 호출, Micrometer Timer
-│       ├── FcmConfig.java                 ← fcm.* 설정 바인딩
-│       └── FcmMessage.java                ← FCM HTTP v1 메시지 페이로드
+│   ├── src/main/java/com/portfolio/fcm/
+│   │   ├── FcmClient.java                 ← Bearer 토큰 획득 후 FCM API 호출, Micrometer Timer
+│   │   ├── FcmConfig.java                 ← fcm.* 설정 바인딩
+│   │   └── FcmMessage.java                ← FCM HTTP v1 메시지 페이로드
+│   └── src/test/java/com/portfolio/fcm/
+│       └── FcmClientTest.java             ← WireMock: FCM API 호출 단위테스트
 │
 ├── monitoring/                            ← 모니터링 스택 설정
 │   ├── prometheus/prometheus.yml          ← /actuator/prometheus 스크레이핑
@@ -396,8 +408,31 @@ docker-compose --profile postgres up -d postgres
 | dialect | `MariaDBDialect` | `PostgreSQLDialect` |
 | 컨테이너 | `mariadb:11.2` | `postgres:16.2` |
 | Flyway | 활성화 (mariadb 스크립트) | 활성화 (postgresql 스크립트) |
+| Testcontainers | BOM 1.21.4 (docker-java 3.4.1, API v1.44 지원) | 동일 |
+
+### 실행 전제 조건
+
+통합 테스트(`AuthIntegrationTest`, `AuthPostgresIntegrationTest`)는 **Docker Desktop이 실행 중**이어야 합니다.
+단위 테스트는 Docker 없이 실행됩니다.
+
+### Docker Desktop 29.x 호환성
+
+Docker Desktop 29.x는 Docker API v1.44 이상을 요구합니다.
+Testcontainers BOM 1.21.4를 사용하여 이 버전을 지원하며, `app/build.gradle`에서
+`DOCKER_HOST`를 Gradle `environment` DSL로 명시합니다.
+(shell 환경변수는 Gradle이 포크한 테스트 JVM에 자동 상속되지 않음)
+
+`testcontainers.properties`에 Docker 소켓 경로와 클라이언트 전략이 고정되어 있어
+별도 환경 설정 없이 Mac HostOS에서 바로 실행할 수 있습니다.
 
 ```bash
-# 전체 테스트 실행
+# 전체 테스트 (Docker Desktop 실행 필요)
 ./gradlew test
+
+# 통합 테스트만
+./gradlew :app:test --tests "com.portfolio.app.auth.AuthIntegrationTest"
+./gradlew :app:test --tests "com.portfolio.app.auth.AuthPostgresIntegrationTest"
+
+# 단위 테스트만 (Docker 불필요)
+./gradlew :app:test --tests "com.portfolio.app.security.*" --tests "com.portfolio.app.admin.*" --tests "com.portfolio.app.post.*" --tests "com.portfolio.app.push.*" --tests "com.portfolio.app.auth.GoogleOAuth2UserServiceTest" --tests "com.portfolio.app.auth.OAuth2AuthenticationSuccessHandlerTest"
 ```
