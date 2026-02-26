@@ -756,6 +756,38 @@ oidcUserService.setOauth2UserService(googleOAuth2UserService); // DB 저장 로�
     ui.userService(googleOAuth2UserService);   // openid 없을 때
     ui.oidcUserService(oidcUserService);       // openid 있을 때 → googleOAuth2UserService 에 위임
 })
+```
+
+### 현재 프로젝트는 OIDC 플로우로 동작한다
+
+`application.yml`에 `scope: openid`가 포함되어 있으므로 현재 프로젝트는 **OIDC 플로우**입니다.
+
+```
+scope: openid, email, profile
+  → Spring Security: OIDC 플로우 선택
+  → OidcUserService.loadUser() 호출
+  → 내부적으로 googleOAuth2UserService 에 위임
+  → GoogleOAuth2UserService.fetchFromGoogle() = super.loadUser()
+      → DefaultOAuth2UserService 가 Google /userinfo 엔드포인트 자동 호출
+      → { sub, email, name, ... } 응답
+  → DB find-or-create → JWT 발급
+```
+
+**userinfo 호출은 수동이 아니라 자동**입니다. `super.loadUser()`(`DefaultOAuth2UserService`) 가 내부적으로 Google `/userinfo` 엔드포인트에 HTTP 요청을 보내고 응답을 파싱합니다. 개발자가 직접 HTTP 요청을 작성할 필요가 없습니다.
+
+`GoogleOAuth2UserService`에서 `fetchFromGoogle()`을 별도 메서드로 분리한 이유도 여기에 있습니다 — 테스트에서 이 HTTP 호출만 Mock으로 대체할 수 있도록 하기 위해서입니다.
+
+| | 누가 처리 | userinfo 호출 |
+|---|---|---|
+| OIDC (현재) | `OidcUserService` → 위임 → `GoogleOAuth2UserService` | 자동 (`super.loadUser()`) |
+| 일반 OAuth2 | `GoogleOAuth2UserService` 직접 | 자동 (`super.loadUser()`) |
+
+구글이 OIDC 응답으로 `id_token`도 함께 보내는지 여부로 플로우를 구분할 수 있습니다:
+
+```
+OIDC 응답:   { access_token: "...", id_token: "eyJ...", token_type: "Bearer" }
+OAuth2 응답: { access_token: "...",                     token_type: "Bearer" }
+```
 
 ## Database Support
 
