@@ -342,17 +342,50 @@ v View in Docker Desktop   o View Config   w Enable Watch   d Detach
 3. 게시글 목록 확인 (`/posts`)
 4. WRITER 역할 부여 후 게시글 작성 테스트
 
-> WRITER 역할 부여 방법:
-> ```bash
-> # 1. 먼저 로그인해서 JWT 발급
-> curl -s -X POST http://localhost:8080/api/auth/login \
->   -H "Content-Type: application/json" \
->   -d '{"username":"your-id","password":"your-pw"}' | jq .
->
-> # 2. ADMIN 계정의 JWT로 WRITER 부여 (userId는 DB에서 확인)
-> curl -X POST http://localhost:8080/api/admin/users/{userId}/grant-writer \
->   -H "Authorization: Bearer {ADMIN_JWT}"
-> ```
+#### WRITER 역할 부여 방법
+
+이 앱에는 두 가지 로그인 방식이 있습니다. `username`/`password`는 Google 계정이 아니라 **`/signup`에서 직접 가입한 ID/PW**입니다.
+
+| 방식 | 가입 방법 | username / password |
+|---|---|---|
+| ID/PW 로그인 | `/signup`에서 직접 가입 | 본인이 입력한 값 |
+| Google OAuth2 로그인 | Google 버튼 클릭 | 없음 (Google이 처리) |
+
+WRITER 역할 부여는 **ADMIN 권한을 가진 계정의 JWT**가 필요합니다. 앱에 ADMIN 생성 UI가 없으므로 DB에서 직접 역할을 변경합니다.
+
+**Step 1 — ADMIN 계정 만들기 (DB 직접 수정)**
+
+```bash
+# MariaDB 접속
+docker exec -it portfolio-mariadb mariadb -u portfolio -pportfolio portfolio
+
+# 가입한 유저 확인
+SELECT id, username, provider FROM users;
+
+# 특정 유저를 ADMIN으로 변경 (id는 위 SELECT 결과 참고)
+UPDATE user_roles SET role = 'ROLE_ADMIN' WHERE user_id = 1;
+```
+
+> Google OAuth2로만 가입한 경우 password가 없으므로 `/signup`에서 별도 ID/PW 계정을 하나 더 만든 후 해당 계정을 ADMIN으로 변경합니다.
+
+**Step 2 — ADMIN 계정으로 로그인해서 JWT 받기**
+
+```bash
+curl -s -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"signup에서_가입한_ID","password":"가입할때_쓴_PW"}' | jq .
+# 응답의 token 값을 복사
+```
+
+**Step 3 — WRITER 부여**
+
+```bash
+# userId는 Step 1의 SELECT 결과에서 확인
+curl -X POST http://localhost:8080/api/admin/users/{userId}/grant-writer \
+  -H "Authorization: Bearer {Step2에서_받은_token}"
+```
+
+WRITER 부여 후 게시글 작성(`/posts/new`)이 활성화됩니다.
 
 ### Run locally (development)
 ```bash
