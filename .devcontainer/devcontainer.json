@@ -37,6 +37,11 @@
     "CLAUDE_CONFIG_DIR": "/home/node/.claude",
     "POWERLEVEL9K_DISABLE_GITSTATUS": "true"
   },
+  "portsAttributes": {
+    "3306": { "onAutoForward": "ignore" },
+    "13306": { "onAutoForward": "ignore" }
+  },
+
   "customizations": {
     "vscode": {
       "extensions": [
