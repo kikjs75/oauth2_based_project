@@ -12,6 +12,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -45,7 +46,15 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
             .oauth2Login(oauth2 -> oauth2
-                .userInfoEndpoint(ui -> ui.userService(googleOAuth2UserService))
+                .userInfoEndpoint(ui -> {
+                    // non-OIDC OAuth2 (openid 스코프 없을 때)
+                    ui.userService(googleOAuth2UserService);
+                    // OIDC (openid 스코프 포함 시 — Google 기본값)
+                    // DefaultOidcUserService 가 userinfo 엔드포인트 호출을 googleOAuth2UserService 에 위임
+                    OidcUserService oidcUserService = new OidcUserService();
+                    oidcUserService.setOauth2UserService(googleOAuth2UserService);
+                    ui.oidcUserService(oidcUserService);
+                })
                 .successHandler(oAuth2SuccessHandler)
             )
             .addFilterBefore(new JwtAuthenticationFilter(tokenProvider),
