@@ -5,6 +5,7 @@
 A full-stack portfolio project demonstrating production-ready practices.
 
 **Backend** (Spring Boot multi-module):
+
 - OAuth2 JWT Assertion client (Google/Microsoft)
 - Google OAuth2 Authorization Code login
 - FCM HTTP v1 push notifications
@@ -14,6 +15,7 @@ A full-stack portfolio project demonstrating production-ready practices.
 - Observability: Micrometer, Prometheus, Grafana, Jaeger (OTLP)
 
 **Frontend** (React + Vite):
+
 - 회원가입 / 로그인 (ID/PW + Google OAuth2)
 - 게시판 목록 / 상세 / 등록 / 수정 / 삭제
 
@@ -168,38 +170,40 @@ oauth2_based_project/
 
 ## Modules
 
-| Module | Description |
-|---|---|
-| `app` | Main Spring Boot application |
-| `oauth2-awt-core` | OAuth2 JWT Bearer assertion library |
+| Module               | Description                                        |
+| -------------------- | -------------------------------------------------- |
+| `app`                | Main Spring Boot application                       |
+| `oauth2-awt-core`    | OAuth2 JWT Bearer assertion library                |
 | `oauth2-awt-starter` | Spring Boot auto-configuration for oauth2-awt-core |
-| `fcm-client` | FCM HTTP v1 API client |
-| `frontend` | React 18 + Vite SPA |
+| `fcm-client`         | FCM HTTP v1 API client                             |
+| `frontend`           | React 18 + Vite SPA                                |
 
 ## Implementation
 
-| 항목 | 내용 |
-|---|---|
-| **멀티모듈** | `app`, `oauth2-awt-core`, `oauth2-awt-starter`, `fcm-client` |
-| **인증** | ID/PW 회원가입·로그인 + Google OAuth2 Authorization Code, JWT(HS256) 발급 |
-| **역할 관리** | USER → WRITER 승격 (ADMIN only), 게시판 WRITER/ADMIN 전용 |
-| **게시판** | 목록/상세/등록/수정/삭제, 본인 글 또는 ADMIN만 수정·삭제 가능 |
-| **OAuth2 AWT** | RS256 JWT assertion, Caffeine 캐시, single-flight, retry |
-| **FCM** | HTTP v1 API, Micrometer Timer 메트릭 |
-| **DB** | MariaDB(기본)/PostgreSQL(옵션), Flyway `{vendor}` 자동 분기, DB-agnostic |
-| **모니터링** | Prometheus + Grafana + Jaeger (docker-compose) |
-| **프론트엔드** | React 18 + Vite, React Router v6, Axios, localStorage JWT |
-| **보안** | 실 credentials 미포함, 환경변수/파일 경로만 사용 |
-| **테스트** | Testcontainers 통합테스트 (MariaDB/PostgreSQL), Mockito 단위테스트 |
+| 항목           | 내용                                                                      |
+| -------------- | ------------------------------------------------------------------------- |
+| **멀티모듈**   | `app`, `oauth2-awt-core`, `oauth2-awt-starter`, `fcm-client`              |
+| **인증**       | ID/PW 회원가입·로그인 + Google OAuth2 Authorization Code, JWT(HS256) 발급 |
+| **역할 관리**  | USER → WRITER 승격 (ADMIN only), 게시판 WRITER/ADMIN 전용                 |
+| **게시판**     | 목록/상세/등록/수정/삭제, 본인 글 또는 ADMIN만 수정·삭제 가능             |
+| **OAuth2 AWT** | RS256 JWT assertion, Caffeine 캐시, single-flight, retry                  |
+| **FCM**        | HTTP v1 API, Micrometer Timer 메트릭                                      |
+| **DB**         | MariaDB(기본)/PostgreSQL(옵션), Flyway `{vendor}` 자동 분기, DB-agnostic  |
+| **모니터링**   | Prometheus + Grafana + Jaeger (docker-compose)                            |
+| **프론트엔드** | React 18 + Vite, React Router v6, Axios, localStorage JWT                 |
+| **보안**       | 실 credentials 미포함, 환경변수/파일 경로만 사용                          |
+| **테스트**     | Testcontainers 통합테스트 (MariaDB/PostgreSQL), Mockito 단위테스트        |
 
 ## Quick Start
 
 ### Prerequisites
+
 - Java 17+
 - Node.js 18+
 - Docker & Docker Compose
 
 ### Run with Docker Compose (전체 스택)
+
 ```bash
 cp .env.example .env
 # .env 필수 항목: JWT_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
@@ -219,10 +223,10 @@ docker-compose up -d
 
 `bootRun` 로컬 테스트용(`http://localhost:8080/api/posts`)과 Docker Compose용 값이 다릅니다.
 
-| 실행 방식 | `OAUTH2_REDIRECT_URI` |
-|---|---|
-| `bootRun` (Method A) | `http://localhost:8080/api/posts` |
-| Docker Compose (Method B) | `http://localhost:8081/callback` |
+| 실행 방식                 | `OAUTH2_REDIRECT_URI`             |
+| ------------------------- | --------------------------------- |
+| `bootRun` (Method A)      | `http://localhost:8080/api/posts` |
+| Docker Compose (Method B) | `http://localhost:8081/callback`  |
 
 `.env`를 다음과 같이 수정합니다.
 
@@ -243,14 +247,14 @@ GCP 콘솔에 등록된 `http://localhost:8080/login/oauth2/code/google`은 그�
 
 Docker Compose 실행 전 아래 포트가 비어 있는지 확인합니다.
 
-| 서비스 | 호스트 포트 | 확인 방법 |
-|---|---|---|
-| app | 8080 | `bootRun` 실행 중이면 Ctrl+C로 종료 |
-| frontend | 8081 | npm dev 실행 중이면 종료 |
-| mariadb | 13306 | `docker compose down` 으로 정리 |
-| grafana | 3000 | — |
-| prometheus | 9090 | — |
-| jaeger | 16686 | — |
+| 서비스     | 호스트 포트 | 확인 방법                           |
+| ---------- | ----------- | ----------------------------------- |
+| app        | 8080        | `bootRun` 실행 중이면 Ctrl+C로 종료 |
+| frontend   | 8081        | npm dev 실행 중이면 종료            |
+| mariadb    | 13306       | `docker compose down` 으로 정리     |
+| grafana    | 3000        | —                                   |
+| prometheus | 9090        | —                                   |
+| jaeger     | 16686       | —                                   |
 
 #### 4. 실행 순서
 
@@ -295,12 +299,12 @@ Google → Spring (/login/oauth2/code/google)
        → /posts 로 이동 (게시판 목록)
 ```
 
-| 확인 항목 | 성공 기준 |
-|---|---|
-| `/posts` 페이지로 이동 | OAuth2 로그인 + JWT 저장 성공 |
-| 게시글 목록 표시 (빈 목록 `[]` 포함) | API 호출 성공 |
-| `redirect_uri_mismatch` 오류 | GCP 등록 URI 확인 (`/login/oauth2/code/google`) |
-| 로그인 후 `/login`으로 돌아옴 | `OAUTH2_REDIRECT_URI` 또는 `GOOGLE_CLIENT_ID/SECRET` 확인 |
+| 확인 항목                            | 성공 기준                                                 |
+| ------------------------------------ | --------------------------------------------------------- |
+| `/posts` 페이지로 이동               | OAuth2 로그인 + JWT 저장 성공                             |
+| 게시글 목록 표시 (빈 목록 `[]` 포함) | API 호출 성공                                             |
+| `redirect_uri_mismatch` 오류         | GCP 등록 URI 확인 (`/login/oauth2/code/google`)           |
+| 로그인 후 `/login`으로 돌아옴        | `OAUTH2_REDIRECT_URI` 또는 `GOOGLE_CLIENT_ID/SECRET` 확인 |
 
 #### 7. 정상 기동 로그 확인 포인트
 
@@ -327,13 +331,13 @@ v View in Docker Desktop   o View Config   w Enable Watch   d Detach
 
 #### 8. 브라우저 접속 및 기능 테스트
 
-| 서비스 | URL |
-|---|---|
-| 프론트엔드 (게시판) | http://localhost:8081 |
-| 백엔드 헬스 체크 | http://localhost:8080/actuator/health |
-| Grafana | http://localhost:3000 (admin / admin) |
-| Jaeger | http://localhost:16686 |
-| Prometheus | http://localhost:9090 |
+| 서비스              | URL                                   |
+| ------------------- | ------------------------------------- |
+| 프론트엔드 (게시판) | http://localhost:8081                 |
+| 백엔드 헬스 체크    | http://localhost:8080/actuator/health |
+| Grafana             | http://localhost:3000 (admin / admin) |
+| Jaeger              | http://localhost:16686                |
+| Prometheus          | http://localhost:9090                 |
 
 **테스트 순서**:
 
@@ -346,10 +350,10 @@ v View in Docker Desktop   o View Config   w Enable Watch   d Detach
 
 이 앱에는 두 가지 로그인 방식이 있습니다. `username`/`password`는 Google 계정이 아니라 **`/signup`에서 직접 가입한 ID/PW**입니다.
 
-| 방식 | 가입 방법 | username / password |
-|---|---|---|
-| ID/PW 로그인 | `/signup`에서 직접 가입 | 본인이 입력한 값 |
-| Google OAuth2 로그인 | Google 버튼 클릭 | 없음 (Google이 처리) |
+| 방식                 | 가입 방법               | username / password  |
+| -------------------- | ----------------------- | -------------------- |
+| ID/PW 로그인         | `/signup`에서 직접 가입 | 본인이 입력한 값     |
+| Google OAuth2 로그인 | Google 버튼 클릭        | 없음 (Google이 처리) |
 
 WRITER 역할 부여는 **ADMIN 권한을 가진 계정의 JWT**가 필요합니다. 앱에 ADMIN 생성 UI가 없으므로 DB에서 직접 역할을 변경합니다.
 
@@ -361,6 +365,7 @@ docker exec -it portfolio-mariadb mariadb -u portfolio -pportfolio portfolio
 
 # 가입한 유저 확인
 SELECT id, username, provider FROM users;
+SELECT * FROM user_roles;
 
 # 특정 유저를 ADMIN으로 변경 (id는 위 SELECT 결과 참고)
 UPDATE user_roles SET role = 'ROLE_ADMIN' WHERE user_id = 1;
@@ -381,14 +386,40 @@ curl -s -X POST http://localhost:8080/api/auth/login \
 **Step 3 — WRITER 부여**
 
 ```bash
-# userId는 Step 1의 SELECT 결과에서 확인
-curl -X POST http://localhost:8080/api/admin/users/{userId}/grant-writer \
-  -H "Authorization: Bearer {Step2에서_받은_token}"
+# userId는 Step 1의 SELECT 결과에서 확인 (숫자 ID)
+curl -X POST http://localhost:8080/api/admin/users/1/grant-writer \
+  -H "Authorization: Bearer eyJhbGci..."
+```
+
+> **자주 하는 실수**
+>
+> | 잘못된 예 | 올바른 예 |
+> |---|---|
+> | `/users/admin/grant-writer` (username) | `/users/1/grant-writer` (숫자 userId) |
+> | `Bearer {eyJhbGci...}` (중괄호 포함) | `Bearer eyJhbGci...` (중괄호 없이) |
+>
+> 빈 응답(아무것도 출력 안 됨) = **성공** (HTTP 204 No Content)
+> `INTERNAL_ERROR` 응답 = URL에 username이 들어간 경우
+
+로그인과 WRITER 부여를 한 번에 처리하는 방법:
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"Djemals1!"}' | jq -r '.accessToken')
+
+curl -X POST http://localhost:8080/api/admin/users/1/grant-writer \
+  -H "Authorization: Bearer $TOKEN"
+
+jinsu.kim@jinsukimui-MacBookPro 1-oauth2-based-project % curl -X POST http://localhost:8080/api/admin/users/1/grant-writer \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwiZXhwIjoxNzcyMDk2MzkwLCJpYXQiOjE3NzIwOTI3OTAsInJvbGVzIjpbIlJPTEVfQURNSU4iXSwidXNlcm5hbWUiOiJhZG1pbiJ9.yu6T2qvqH2Gxz4FVpLcZSRRG8jEeakL_9NyrAu_S4Q0"
+jinsu.kim@jinsukimui-MacBookPro 1-oauth2-based-project %  
 ```
 
 WRITER 부여 후 게시글 작성(`/posts/new`)이 활성화됩니다.
 
 ### Run locally (development)
+
 ```bash
 # 1. 의존 서비스 기동 (MariaDB)
 docker compose up mariadb -d
@@ -445,12 +476,12 @@ Google 로그인 완료 후 아래와 같이 리다이렉트되면 성공입니�
 http://localhost:8080/api/posts?token=eyJhbGci...
 ```
 
-| 확인 항목 | 성공 기준 |
-|----------|----------|
-| URL에 `?token=eyJ...` 포함 | JWT 발급 성공 |
-| 응답 본문 `[]` | 게시글 없음 (정상) |
-| `redirect_uri_mismatch` 오류 | GCP 등록 URI 확인 필요 |
-| `invalid_client` 오류 | Client ID / Secret 확인 필요 |
+| 확인 항목                    | 성공 기준                    |
+| ---------------------------- | ---------------------------- |
+| URL에 `?token=eyJ...` 포함   | JWT 발급 성공                |
+| 응답 본문 `[]`               | 게시글 없음 (정상)           |
+| `redirect_uri_mismatch` 오류 | GCP 등록 URI 확인 필요       |
+| `invalid_client` 오류        | Client ID / Secret 확인 필요 |
 
 ### JWT 내용 확인 (jwt.io)
 
@@ -482,45 +513,49 @@ jwt.io Debugger 의 **Encoded** 칸에 붙여넣으면 **Decoded** 에서 아래
 ## API Endpoints
 
 ### 인증
-| Method | Path | Role | Description |
-|---|---|---|---|
-| POST | /api/auth/signup | Public | ID/PW 회원가입 |
-| POST | /api/auth/login | Public | ID/PW 로그인 → JWT 반환 |
-| GET | /oauth2/authorization/google | Public | Google OAuth2 로그인 시작 |
-| GET | /login/oauth2/code/google | Public | Google OAuth2 콜백 (Spring Security 자동 처리) |
+
+| Method | Path                         | Role   | Description                                    |
+| ------ | ---------------------------- | ------ | ---------------------------------------------- |
+| POST   | /api/auth/signup             | Public | ID/PW 회원가입                                 |
+| POST   | /api/auth/login              | Public | ID/PW 로그인 → JWT 반환                        |
+| GET    | /oauth2/authorization/google | Public | Google OAuth2 로그인 시작                      |
+| GET    | /login/oauth2/code/google    | Public | Google OAuth2 콜백 (Spring Security 자동 처리) |
 
 ### 관리자
-| Method | Path | Role | Description |
-|---|---|---|---|
-| POST | /api/admin/users/{id}/grant-writer | ADMIN | 사용자를 WRITER로 승격 |
+
+| Method | Path                               | Role  | Description            |
+| ------ | ---------------------------------- | ----- | ---------------------- |
+| POST   | /api/admin/users/{id}/grant-writer | ADMIN | 사용자를 WRITER로 승격 |
 
 ### 게시판
-| Method | Path | Role | Description |
-|---|---|---|---|
-| GET | /api/posts | Authenticated | 게시글 목록 조회 |
-| GET | /api/posts/{id} | Authenticated | 게시글 상세 조회 |
-| POST | /api/posts | WRITER, ADMIN | 게시글 등록 |
-| PUT | /api/posts/{id} | WRITER(본인), ADMIN | 게시글 수정 |
-| DELETE | /api/posts/{id} | WRITER(본인), ADMIN | 게시글 삭제 |
+
+| Method | Path            | Role                | Description      |
+| ------ | --------------- | ------------------- | ---------------- |
+| GET    | /api/posts      | Authenticated       | 게시글 목록 조회 |
+| GET    | /api/posts/{id} | Authenticated       | 게시글 상세 조회 |
+| POST   | /api/posts      | WRITER, ADMIN       | 게시글 등록      |
+| PUT    | /api/posts/{id} | WRITER(본인), ADMIN | 게시글 수정      |
+| DELETE | /api/posts/{id} | WRITER(본인), ADMIN | 게시글 삭제      |
 
 ### 푸시
-| Method | Path | Role | Description |
-|---|---|---|---|
-| POST | /api/push/test | WRITER, ADMIN | FCM 테스트 푸시 발송 |
+
+| Method | Path           | Role          | Description          |
+| ------ | -------------- | ------------- | -------------------- |
+| POST   | /api/push/test | WRITER, ADMIN | FCM 테스트 푸시 발송 |
 
 ## Frontend
 
 ### 화면 구성
 
-| 경로 | 화면 | 접근 |
-|---|---|---|
-| `/signup` | 회원가입 | 비로그인 |
-| `/login` | 로그인 (ID/PW + Google 버튼) | 비로그인 |
-| `/callback` | OAuth2 토큰 처리 (자동 이동) | — |
-| `/posts` | 게시글 목록 | 로그인 |
-| `/posts/:id` | 게시글 상세 + 수정/삭제 버튼 | 로그인 |
-| `/posts/new` | 게시글 작성 | WRITER, ADMIN |
-| `/posts/:id/edit` | 게시글 수정 | WRITER(본인), ADMIN |
+| 경로              | 화면                         | 접근                |
+| ----------------- | ---------------------------- | ------------------- |
+| `/signup`         | 회원가입                     | 비로그인            |
+| `/login`          | 로그인 (ID/PW + Google 버튼) | 비로그인            |
+| `/callback`       | OAuth2 토큰 처리 (자동 이동) | —                   |
+| `/posts`          | 게시글 목록                  | 로그인              |
+| `/posts/:id`      | 게시글 상세 + 수정/삭제 버튼 | 로그인              |
+| `/posts/new`      | 게시글 작성                  | WRITER, ADMIN       |
+| `/posts/:id/edit` | 게시글 수정                  | WRITER(본인), ADMIN |
 
 ### 권한별 UI 동작
 
@@ -530,24 +565,24 @@ jwt.io Debugger 의 **Encoded** 칸에 붙여넣으면 **Decoded** 에서 아래
 
 ### 기술 스택
 
-| 항목 | 내용 |
-|---|---|
-| 빌드 도구 | Vite 5 |
-| 프레임워크 | React 18 |
-| 라우팅 | React Router v6 |
-| HTTP 클라이언트 | Axios (JWT Bearer 인터셉터) |
-| 상태 관리 | localStorage (JWT 저장) |
-| 스타일 | 순수 CSS (외부 UI 라이브러리 없음) |
+| 항목            | 내용                               |
+| --------------- | ---------------------------------- |
+| 빌드 도구       | Vite 5                             |
+| 프레임워크      | React 18                           |
+| 라우팅          | React Router v6                    |
+| HTTP 클라이언트 | Axios (JWT Bearer 인터셉터)        |
+| 상태 관리       | localStorage (JWT 저장)            |
+| 스타일          | 순수 CSS (외부 UI 라이브러리 없음) |
 
 ## 포트 정리
 
-| 서비스 | URL | 비고 |
-|---|---|---|
-| 프론트엔드 | http://localhost:8081 | React (Docker: nginx, Dev: Vite) |
-| 백엔드 API | http://localhost:8080 | Spring Boot |
-| Prometheus | http://localhost:9090 | 메트릭 수집 |
-| Grafana | http://localhost:3000 | admin / admin |
-| Jaeger | http://localhost:16686 | 분산 트레이싱 |
+| 서비스     | URL                    | 비고                             |
+| ---------- | ---------------------- | -------------------------------- |
+| 프론트엔드 | http://localhost:8081  | React (Docker: nginx, Dev: Vite) |
+| 백엔드 API | http://localhost:8080  | Spring Boot                      |
+| Prometheus | http://localhost:9090  | 메트릭 수집                      |
+| Grafana    | http://localhost:3000  | admin / admin                    |
+| Jaeger     | http://localhost:16686 | 분산 트레이싱                    |
 
 ## Monitoring
 
@@ -562,13 +597,13 @@ Prometheus, Grafana, Jaeger는 docker-compose에 포함되어 있습니다.
 
 ### 환경변수 출처
 
-| 환경변수 | 출처 | 설명 |
-|---|---|---|
-| `GOOGLE_CLIENT_ID` | GCP 콘솔 → OAuth2 클라이언트 | OAuth2 앱 식별자 |
-| `GOOGLE_CLIENT_SECRET` | GCP 콘솔 → OAuth2 클라이언트 | OAuth2 앱 시크릿 |
-| `JWT_SECRET` | 직접 생성 | 우리 앱이 JWT 서명할 때 사용하는 키 (GCP와 무관) |
-| `GOOGLE_SERVICE_ACCOUNT_KEY_PATH` | GCP 콘솔 → 서비스 계정 JSON 다운로드 | FCM/OAuth2 AWT용 서비스 계정 |
-| `FCM_PROJECT_ID` | Firebase 콘솔 → 프로젝트 설정 | FCM 프로젝트 ID |
+| 환경변수                          | 출처                                 | 설명                                             |
+| --------------------------------- | ------------------------------------ | ------------------------------------------------ |
+| `GOOGLE_CLIENT_ID`                | GCP 콘솔 → OAuth2 클라이언트         | OAuth2 앱 식별자                                 |
+| `GOOGLE_CLIENT_SECRET`            | GCP 콘솔 → OAuth2 클라이언트         | OAuth2 앱 시크릿                                 |
+| `JWT_SECRET`                      | 직접 생성                            | 우리 앱이 JWT 서명할 때 사용하는 키 (GCP와 무관) |
+| `GOOGLE_SERVICE_ACCOUNT_KEY_PATH` | GCP 콘솔 → 서비스 계정 JSON 다운로드 | FCM/OAuth2 AWT용 서비스 계정                     |
+| `FCM_PROJECT_ID`                  | Firebase 콘솔 → 프로젝트 설정        | FCM 프로젝트 ID                                  |
 
 ### JWT_SECRET 생성
 
@@ -581,12 +616,13 @@ openssl rand -base64 32
 
 ### GCP OAuth2 설정 (Google Cloud Console)
 
-| 항목 | 값 |
-|---|---|
-| 승인된 JavaScript 원본 | (불필요 — 백엔드가 Google과 직접 통신) |
-| 승인된 리다이렉션 URI | `http://localhost:8080/login/oauth2/code/google` |
+| 항목                   | 값                                               |
+| ---------------------- | ------------------------------------------------ |
+| 승인된 JavaScript 원본 | (불필요 — 백엔드가 Google과 직접 통신)           |
+| 승인된 리다이렉션 URI  | `http://localhost:8080/login/oauth2/code/google` |
 
 > **리다이렉트 2단계 구분**
+>
 > - 1단계 (GCP 등록 URI): Google → Spring으로 인증 code 전달 (`/login/oauth2/code/google`)
 > - 2단계 (`OAUTH2_REDIRECT_URI`): Spring이 JWT 발급 후 → 프론트엔드로 전달 (`/callback?token=JWT`)
 >
@@ -617,13 +653,13 @@ MICROSOFT_PRIVATE_KEY_PEM_PATH=/path/to/client-private-key.pem
 MICROSOFT_KEY_ID=your-certificate-thumbprint
 ```
 
-| 항목 | 로컬 개발 (`bootRun`) | Docker Compose |
-|---|---|---|
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | `.env`에 설정 (미설정 시 OAuth2 로그인 불가, 앱 기동 O) | 동일 |
-| `OAUTH2_REDIRECT_URI` | 프론트엔드 콜백 URL (기본: `http://localhost:8081/callback`) | 동일 |
-| `GOOGLE_SERVICE_ACCOUNT_KEY_PATH` | 호스트 경로 직접 참조 | 호스트 경로 → `/secrets/google-service-account.json` 자동 마운트 |
-| FCM 미설정 시 | 앱 기동 O, push 엔드포인트만 비활성 | 동일 |
-| Microsoft | 선택 사항, 미설정 시 빈 비활성 | 동일 |
+| 항목                                        | 로컬 개발 (`bootRun`)                                        | Docker Compose                                                   |
+| ------------------------------------------- | ------------------------------------------------------------ | ---------------------------------------------------------------- |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | `.env`에 설정 (미설정 시 OAuth2 로그인 불가, 앱 기동 O)      | 동일                                                             |
+| `OAUTH2_REDIRECT_URI`                       | 프론트엔드 콜백 URL (기본: `http://localhost:8081/callback`) | 동일                                                             |
+| `GOOGLE_SERVICE_ACCOUNT_KEY_PATH`           | 호스트 경로 직접 참조                                        | 호스트 경로 → `/secrets/google-service-account.json` 자동 마운트 |
+| FCM 미설정 시                               | 앱 기동 O, push 엔드포인트만 비활성                          | 동일                                                             |
+| Microsoft                                   | 선택 사항, 미설정 시 빈 비활성                               | 동일                                                             |
 
 ## Security
 
@@ -670,12 +706,13 @@ spring:
 
 ### GCP 콘솔 설정
 
-| 항목 | 값 |
-|------|-----|
-| 승인된 JavaScript 원본 | (불필요 — 백엔드가 Google과 직접 통신) |
+| 항목                      | 값                                               |
+| ------------------------- | ------------------------------------------------ |
+| 승인된 JavaScript 원본    | (불필요 — 백엔드가 Google과 직접 통신)           |
 | **승인된 리다이렉션 URI** | `http://localhost:8080/login/oauth2/code/google` |
 
 > **리다이렉트 2단계 구분**
+>
 > - 1단계: Google → Spring (`/login/oauth2/code/google`) — AUTH_CODE 전달, GCP 콘솔에 등록
 > - 2단계: Spring → 프론트엔드 (`OAUTH2_REDIRECT_URI`) — JWT 전달, Google은 알지 못함
 
@@ -685,12 +722,13 @@ Default: **MariaDB**
 
 Flyway 마이그레이션은 `{vendor}` 플레이스홀더로 DB별 스크립트를 자동 선택합니다:
 
-| 버전 | 내용 |
-|---|---|
-| V1 | 초기 스키마 (users, user_roles, posts) |
-| V2 | username 255자 확장, password nullable, provider / provider_id 컬럼 추가 (OAuth2 지원) |
+| 버전 | 내용                                                                                   |
+| ---- | -------------------------------------------------------------------------------------- |
+| V1   | 초기 스키마 (users, user_roles, posts)                                                 |
+| V2   | username 255자 확장, password nullable, provider / provider_id 컬럼 추가 (OAuth2 지원) |
 
 Switch to PostgreSQL:
+
 ```yaml
 # application.yml overrides
 spring:
@@ -704,6 +742,7 @@ spring:
 ```
 
 Or use the postgres Docker Compose profile:
+
 ```bash
 docker-compose --profile postgres up -d postgres
 ```
@@ -712,15 +751,15 @@ docker-compose --profile postgres up -d postgres
 
 통합 테스트는 Testcontainers로 실제 DB 컨테이너를 기동합니다. CI에 별도 DB 설치 불필요.
 
-| 항목 | MariaDB 테스트 | PostgreSQL 테스트 |
-|---|---|---|
-| 베이스 클래스 | `MariaDbContainerSupport` | `PostgresContainerSupport` |
-| 프로파일 | `test` | `test-pg` |
-| yml | `application-test.yml` | `application-test-pg.yml` |
-| dialect | `MariaDBDialect` | `PostgreSQLDialect` |
-| 컨테이너 | `mariadb:11.2` | `postgres:16.2` |
-| Flyway | 활성화 (mariadb 스크립트) | 활성화 (postgresql 스크립트) |
-| Testcontainers | BOM 1.21.4 (docker-java 3.4.1, API v1.44 지원) | 동일 |
+| 항목           | MariaDB 테스트                                 | PostgreSQL 테스트            |
+| -------------- | ---------------------------------------------- | ---------------------------- |
+| 베이스 클래스  | `MariaDbContainerSupport`                      | `PostgresContainerSupport`   |
+| 프로파일       | `test`                                         | `test-pg`                    |
+| yml            | `application-test.yml`                         | `application-test-pg.yml`    |
+| dialect        | `MariaDBDialect`                               | `PostgreSQLDialect`          |
+| 컨테이너       | `mariadb:11.2`                                 | `postgres:16.2`              |
+| Flyway         | 활성화 (mariadb 스크립트)                      | 활성화 (postgresql 스크립트) |
+| Testcontainers | BOM 1.21.4 (docker-java 3.4.1, API v1.44 지원) | 동일                         |
 
 ### 실행 전제 조건
 
@@ -765,11 +804,11 @@ Testcontainers BOM 1.21.4를 사용하여 이 버전을 지원하며, `app/build
 
 **주요 옵션**
 
-| 옵션 | 설명 |
-|---|---|
-| `--no-daemon` | 백그라운드 데몬 없이 새 JVM으로 실행. 데몬 캐시 영향 배제할 때 사용 |
-| `--refresh-dependencies` | `~/.gradle/caches` 무시하고 원격 저장소에서 의존성 재다운로드 |
-| `-i` | INFO 레벨 로그 출력 (Docker 연결 흐름, 테스트 상세 등 확인 시) |
+| 옵션                     | 설명                                                                |
+| ------------------------ | ------------------------------------------------------------------- |
+| `--no-daemon`            | 백그라운드 데몬 없이 새 JVM으로 실행. 데몬 캐시 영향 배제할 때 사용 |
+| `--refresh-dependencies` | `~/.gradle/caches` 무시하고 원격 저장소에서 의존성 재다운로드       |
+| `-i`                     | INFO 레벨 로그 출력 (Docker 연결 흐름, 테스트 상세 등 확인 시)      |
 
 ```bash
 # 데몬 제외, 캐시 무시, 상세 로그
