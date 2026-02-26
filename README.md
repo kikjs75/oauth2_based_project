@@ -213,6 +213,95 @@ docker-compose up -d
 > 컨테이너 내부 `/secrets/google-service-account.json`에 자동 마운트됩니다.
 > 미설정 시 FCM 빈이 비활성화되어 앱은 정상 기동되며, `/api/push/test`만 비활성 상태가 됩니다.
 
+### Docker Compose 전체 스택 실행 전 체크리스트
+
+#### 1. `.env` — `OAUTH2_REDIRECT_URI` 변경 (필수)
+
+`bootRun` 로컬 테스트용(`http://localhost:8080/api/posts`)과 Docker Compose용 값이 다릅니다.
+
+| 실행 방식 | `OAUTH2_REDIRECT_URI` |
+|---|---|
+| `bootRun` (Method A) | `http://localhost:8080/api/posts` |
+| Docker Compose (Method B) | `http://localhost:8081/callback` |
+
+`.env`를 다음과 같이 수정합니다.
+
+```bash
+OAUTH2_REDIRECT_URI=http://localhost:8081/callback
+```
+
+> `OAUTH2_REDIRECT_URI`는 **Spring이 JWT 발급 후 프론트엔드로 보내는 URL**입니다.
+> Google → Spring으로 오는 redirect URI(`/login/oauth2/code/google`)와 다르며,
+> GCP 콘솔에 등록할 필요가 없습니다.
+
+#### 2. GCP 콘솔 — 추가 설정 불필요
+
+GCP 콘솔에 등록된 `http://localhost:8080/login/oauth2/code/google`은 그대로 유지합니다.
+`OAUTH2_REDIRECT_URI` 변경은 GCP 설정에 영향을 주지 않습니다.
+
+#### 3. 포트 충돌 확인
+
+Docker Compose 실행 전 아래 포트가 비어 있는지 확인합니다.
+
+| 서비스 | 호스트 포트 | 확인 방법 |
+|---|---|---|
+| app | 8080 | `bootRun` 실행 중이면 Ctrl+C로 종료 |
+| frontend | 8081 | npm dev 실행 중이면 종료 |
+| mariadb | 13306 | `docker compose down` 으로 정리 |
+| grafana | 3000 | — |
+| prometheus | 9090 | — |
+| jaeger | 16686 | — |
+
+#### 4. 실행 순서
+
+```bash
+# (1) bootRun / npm dev 실행 중이면 종료 (Ctrl+C)
+
+# (2) 기존 컨테이너 정리
+docker compose down
+
+# (3) OAUTH2_REDIRECT_URI가 올바르게 반영되는지 확인
+docker compose config | grep OAUTH2_REDIRECT_URI
+# 출력: OAUTH2_REDIRECT_URI=http://localhost:8081/callback
+
+# (4) 전체 빌드 후 실행 (최초 또는 코드 변경 시)
+docker compose up --build
+
+# (5) 이미 빌드된 이미지 재사용 시
+docker compose up
+```
+
+#### 5. 기동 확인
+
+```bash
+# 앱 헬스 체크
+curl http://localhost:8080/actuator/health
+# 정상: {"status":"UP"}
+```
+
+브라우저에서 프론트엔드 접속: `http://localhost:8081`
+
+#### 6. Google OAuth2 테스트 (전체 스택)
+
+브라우저에서 `http://localhost:8081/login` 접속 후 **Google로 로그인** 버튼 클릭.
+
+Google 로그인 완료 후 흐름:
+
+```
+Google → Spring (/login/oauth2/code/google)
+       → JWT 발급
+       → http://localhost:8081/callback?token=eyJhbGci...
+       → CallbackPage가 토큰을 localStorage에 저장
+       → /posts 로 이동 (게시판 목록)
+```
+
+| 확인 항목 | 성공 기준 |
+|---|---|
+| `/posts` 페이지로 이동 | OAuth2 로그인 + JWT 저장 성공 |
+| 게시글 목록 표시 (빈 목록 `[]` 포함) | API 호출 성공 |
+| `redirect_uri_mismatch` 오류 | GCP 등록 URI 확인 (`/login/oauth2/code/google`) |
+| 로그인 후 `/login`으로 돌아옴 | `OAUTH2_REDIRECT_URI` 또는 `GOOGLE_CLIENT_ID/SECRET` 확인 |
+
 ### Run locally (development)
 ```bash
 # 1. 의존 서비스 기동 (MariaDB)
