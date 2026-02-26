@@ -310,6 +310,38 @@ Prometheus, Grafana, Jaeger는 docker-compose에 포함되어 있습니다.
 
 ## Configuration
 
+### 환경변수 출처
+
+| 환경변수 | 출처 | 설명 |
+|---|---|---|
+| `GOOGLE_CLIENT_ID` | GCP 콘솔 → OAuth2 클라이언트 | OAuth2 앱 식별자 |
+| `GOOGLE_CLIENT_SECRET` | GCP 콘솔 → OAuth2 클라이언트 | OAuth2 앱 시크릿 |
+| `JWT_SECRET` | 직접 생성 | 우리 앱이 JWT 서명할 때 사용하는 키 (GCP와 무관) |
+| `GOOGLE_SERVICE_ACCOUNT_KEY_PATH` | GCP 콘솔 → 서비스 계정 JSON 다운로드 | FCM/OAuth2 AWT용 서비스 계정 |
+| `FCM_PROJECT_ID` | Firebase 콘솔 → 프로젝트 설정 | FCM 프로젝트 ID |
+
+### JWT_SECRET 생성
+
+GCP 등 외부 서비스에서 받는 값이 아니라 직접 생성합니다. 256비트(32바이트) 이상의 랜덤 문자열이면 됩니다.
+
+```bash
+openssl rand -base64 32
+# 출력 예: K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols=
+```
+
+### GCP OAuth2 설정 (Google Cloud Console)
+
+| 항목 | 값 |
+|---|---|
+| 승인된 JavaScript 원본 | (불필요 — 백엔드가 Google과 직접 통신) |
+| 승인된 리다이렉션 URI | `http://localhost:8080/login/oauth2/code/google` |
+
+> **리다이렉트 2단계 구분**
+> - 1단계 (GCP 등록 URI): Google → Spring으로 인증 code 전달 (`/login/oauth2/code/google`)
+> - 2단계 (`OAUTH2_REDIRECT_URI`): Spring이 JWT 발급 후 → 프론트엔드로 전달 (`/callback?token=JWT`)
+>
+> Google은 2단계를 모릅니다. 1단계 URI만 GCP 콘솔에 등록하면 됩니다.
+
 All secrets are via environment variables (see `.env.example`):
 
 ```
@@ -364,8 +396,38 @@ Browser/Client
   → Client uses token for subsequent API calls
 ```
 
-Google Cloud Console에서 `http://localhost:8080/login/oauth2/code/google`을
-Authorized redirect URI로 등록해야 합니다.
+### registrationId
+
+`/oauth2/authorization/google` 의 `google` 부분은 `application.yml` 에서 개발자가 붙인 이름(**registrationId**)입니다.
+프로젝트 코드 어디에도 이 경로를 직접 정의하지 않으며, Spring Security 내부에서 자동 생성합니다.
+
+```yaml
+# app/src/main/resources/application.yml
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          google:          ← registrationId = "google"
+            client-id: ${GOOGLE_CLIENT_ID:}
+            client-secret: ${GOOGLE_CLIENT_SECRET:}
+```
+
+```
+/oauth2/authorization/{registrationId}  →  /oauth2/authorization/google   (로그인 시작)
+/login/oauth2/code/{registrationId}     →  /login/oauth2/code/google      (Google 콜백)
+```
+
+### GCP 콘솔 설정
+
+| 항목 | 값 |
+|------|-----|
+| 승인된 JavaScript 원본 | (불필요 — 백엔드가 Google과 직접 통신) |
+| **승인된 리다이렉션 URI** | `http://localhost:8080/login/oauth2/code/google` |
+
+> **리다이렉트 2단계 구분**
+> - 1단계: Google → Spring (`/login/oauth2/code/google`) — AUTH_CODE 전달, GCP 콘솔에 등록
+> - 2단계: Spring → 프론트엔드 (`OAUTH2_REDIRECT_URI`) — JWT 전달, Google은 알지 못함
 
 ## Database Support
 
