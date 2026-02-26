@@ -367,6 +367,7 @@ UPDATE user_roles SET role = 'ROLE_ADMIN' WHERE user_id = 1;
 ```
 
 > Google OAuth2로만 가입한 경우 password가 없으므로 `/signup`에서 별도 ID/PW 계정을 하나 더 만든 후 해당 계정을 ADMIN으로 변경합니다.
+> example : admin / Djemals1!(어드민1!)
 
 **Step 2 — ADMIN 계정으로 로그인해서 JWT 받기**
 
