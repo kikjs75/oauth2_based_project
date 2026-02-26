@@ -716,6 +716,47 @@ spring:
 > - 1단계: Google → Spring (`/login/oauth2/code/google`) — AUTH_CODE 전달, GCP 콘솔에 등록
 > - 2단계: Spring → 프론트엔드 (`OAUTH2_REDIRECT_URI`) — JWT 전달, Google은 알지 못함
 
+### OAuth2 vs OIDC — scope: openid 의 의미
+
+`application.yml`에 `scope: openid`가 포함되면 Google은 일반 OAuth2가 아닌 **OIDC(OpenID Connect)** 플로우로 동작합니다.
+
+**OAuth2만 사용할 때 (`scope: email, profile`)**
+
+```
+구글 → access_token 발급
+내 앱 → access_token으로 /userinfo 엔드포인트 직접 호출 → 이메일, 이름 수동으로 조회
+```
+
+**OIDC 사용 시 (`scope: openid, email, profile`)**
+
+```
+구글 → access_token + id_token 함께 발급
+        └─ id_token: 구글이 서명한 JWT (sub, email, name 이미 포함)
+내 앱 → id_token만 검증하면 됨 (별도 /userinfo 호출 불필요)
+```
+
+**Spring Security 내부 분기**
+
+| | `userService` | `oidcUserService` |
+|---|---|---|
+| 호출 조건 | `openid` 스코프 **없을 때** | `openid` 스코프 **있을 때** |
+| 입력 타입 | `OAuth2UserRequest` | `OidcUserRequest` (`id_token` 포함) |
+
+`scope: openid`가 있으면 Spring Security는 `oidcUserService`를 호출합니다.
+`userService`만 등록하고 `oidcUserService`를 등록하지 않으면 커스텀 로직이 무시되고
+기본 `DefaultOidcUserService`가 동작합니다 — DB 저장 안 됨, `userId = null` JWT 발급.
+
+**이 프로젝트의 해결 방법** (`SecurityConfig.java`)
+
+```java
+OidcUserService oidcUserService = new OidcUserService();
+oidcUserService.setOauth2UserService(googleOAuth2UserService); // DB 저장 로직 위임
+
+.userInfoEndpoint(ui -> {
+    ui.userService(googleOAuth2UserService);   // openid 없을 때
+    ui.oidcUserService(oidcUserService);       // openid 있을 때 → googleOAuth2UserService 에 위임
+})
+
 ## Database Support
 
 Default: **MariaDB**
