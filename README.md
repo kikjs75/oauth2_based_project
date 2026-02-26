@@ -302,6 +302,58 @@ Google → Spring (/login/oauth2/code/google)
 | `redirect_uri_mismatch` 오류 | GCP 등록 URI 확인 (`/login/oauth2/code/google`) |
 | 로그인 후 `/login`으로 돌아옴 | `OAUTH2_REDIRECT_URI` 또는 `GOOGLE_CLIENT_ID/SECRET` 확인 |
 
+#### 7. 정상 기동 로그 확인 포인트
+
+`docker compose up --build` 성공 시 아래 로그가 순서대로 출력됩니다.
+
+```
+✔ Container portfolio-mariadb  Healthy          ← MariaDB 헬스체크 통과
+✔ Container portfolio-app      Recreated        ← 앱 컨테이너 시작
+✔ Container portfolio-frontend Recreated        ← 프론트엔드 컨테이너 시작
+
+portfolio-app | HikariPool-1 - Start completed.                     ← DB 연결 성공
+portfolio-app | Successfully validated 2 migrations                  ← Flyway V1, V2 정상
+portfolio-app | Schema `portfolio` is up to date.                    ← DB 스키마 최신
+portfolio-app | Started PortfolioApplication in 2.xxx seconds        ← 앱 기동 완료
+portfolio-app | Tomcat started on port 8080                          ← API 서버 준비
+portfolio-frontend | Configuration complete; ready for start up      ← nginx 준비 완료
+```
+
+이후 로그가 멈추고 아래 프롬프트가 표시되면 전체 스택 준비 완료입니다.
+
+```
+v View in Docker Desktop   o View Config   w Enable Watch   d Detach
+```
+
+#### 8. 브라우저 접속 및 기능 테스트
+
+| 서비스 | URL |
+|---|---|
+| 프론트엔드 (게시판) | http://localhost:8081 |
+| 백엔드 헬스 체크 | http://localhost:8080/actuator/health |
+| Grafana | http://localhost:3000 (admin / admin) |
+| Jaeger | http://localhost:16686 |
+| Prometheus | http://localhost:9090 |
+
+**테스트 순서**:
+
+1. `http://localhost:8081` 접속 → 회원가입 (`/signup`)
+2. 로그인 (`/login`) — ID/PW 또는 **Google로 로그인** 버튼
+3. 게시글 목록 확인 (`/posts`)
+4. WRITER 역할 부여 후 게시글 작성 테스트
+
+> WRITER 역할 부여 방법:
+> ```bash
+> # 1. 먼저 로그인해서 JWT 발급
+> curl -s -X POST http://localhost:8080/api/auth/login \
+>   -H "Content-Type: application/json" \
+>   -d '{"username":"your-id","password":"your-pw"}' | jq .
+>
+> # 2. ADMIN 계정의 JWT로 WRITER 부여 (userId는 DB에서 확인)
+> curl -X POST http://localhost:8080/api/admin/users/{userId}/grant-writer \
+>   -H "Authorization: Bearer {ADMIN_JWT}"
+> ```
+
 ### Run locally (development)
 ```bash
 # 1. 의존 서비스 기동 (MariaDB)
