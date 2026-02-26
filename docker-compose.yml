@@ -10,7 +10,7 @@ services:
       MARIADB_USER: portfolio
       MARIADB_PASSWORD: portfolio
     ports:
-      - "3306:3306"
+      - "13306:3306"
     volumes:
       - mariadb-data:/var/lib/mysql
     healthcheck:
@@ -105,8 +105,9 @@ services:
       OAUTH2_REDIRECT_URI: ${OAUTH2_REDIRECT_URI:-http://localhost:8081/callback}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
       OTEL_SERVICE_NAME: portfolio-app
-      # FCM: 호스트의 서비스 계정 JSON을 컨테이너 내부 고정 경로로 마운트
-      GOOGLE_SERVICE_ACCOUNT_KEY_PATH: /secrets/google-service-account.json
+      # FCM: .env의 GOOGLE_SERVICE_ACCOUNT_KEY_PATH가 비어 있으면 빈 값 → 빈 채로 통과 → 빈이 비활성화
+      # 값이 있으면 컨테이너 내부 고정 경로(/secrets/...)를 가리키도록 설정
+      GOOGLE_SERVICE_ACCOUNT_KEY_PATH: ${GOOGLE_SERVICE_ACCOUNT_KEY_PATH:+/secrets/google-service-account.json}
       FCM_PROJECT_ID: ${FCM_PROJECT_ID:-}
     volumes:
       # GOOGLE_SERVICE_ACCOUNT_KEY_PATH(호스트 경로) → 컨테이너 내부 /secrets/ 로 마운트
