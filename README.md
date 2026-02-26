@@ -215,19 +215,94 @@ docker-compose up -d
 
 ### Run locally (development)
 ```bash
-# 1. 의존 서비스 기동 (MariaDB + Jaeger)
-docker-compose up -d mariadb jaeger
+# 1. 의존 서비스 기동 (MariaDB)
+docker compose up mariadb -d
 
-# 2. 백엔드 실행 (http://localhost:8080)
+# 2. 환경변수 로드
+set -a && source .env && set +a
+
+# 3. 백엔드 실행 (http://localhost:8080)
 ./gradlew :app:bootRun
 
-# 3. 프론트엔드 실행 (별도 터미널, http://localhost:8081)
+# 4. 프론트엔드 실행 (별도 터미널, http://localhost:8081)
 cd frontend
 npm install
 npm run dev
 ```
 
 > 프론트엔드 dev 서버는 `/api` 요청을 `http://localhost:8080`으로 프록시합니다.
+
+### 로컬 실행 시 참고사항
+
+**`bootRun` 이 94%에서 멈춘 것처럼 보이는 경우**
+
+정상입니다. `bootRun` 은 앱이 실행 중인 동안 계속 94%에 머뭅니다. 100%가 되는 건 앱이 종료될 때입니다.
+
+**`HikariPool - Thread starvation or clock leap detected` 경고**
+
+Mac이 잠자기(sleep) 상태였다가 깨어날 때 JVM이 시간 차이를 감지하는 경고입니다. 기능상 문제 없습니다.
+
+**VS Code DevContainer 사용 시 포트 충돌**
+
+VS Code가 MariaDB 포트를 자동으로 포워딩하여 Spring이 연결하지 못하는 경우가 있습니다.
+VS Code Settings (`Cmd+,`) 에서 `remote.autoForwardPorts` 를 비활성화하면 해결됩니다.
+
+### 앱 기동 확인
+
+새 터미널에서 확인합니다.
+
+```bash
+curl http://localhost:8080/actuator/health
+# 정상: {"status":"UP"}
+```
+
+### Google OAuth2 테스트
+
+브라우저에서 접속합니다.
+
+```
+http://localhost:8080/oauth2/authorization/google
+```
+
+Google 로그인 완료 후 아래와 같이 리다이렉트되면 성공입니다.
+
+```
+http://localhost:8080/api/posts?token=eyJhbGci...
+```
+
+| 확인 항목 | 성공 기준 |
+|----------|----------|
+| URL에 `?token=eyJ...` 포함 | JWT 발급 성공 |
+| 응답 본문 `[]` | 게시글 없음 (정상) |
+| `redirect_uri_mismatch` 오류 | GCP 등록 URI 확인 필요 |
+| `invalid_client` 오류 | Client ID / Secret 확인 필요 |
+
+### JWT 내용 확인 (jwt.io)
+
+URL에서 `token=` 뒤의 값을 복사한 후 [https://jwt.io](https://jwt.io) 에 붙여넣으면 JWT 내용을 확인할 수 있습니다.
+
+```
+# URL 예시
+http://localhost:8080/api/posts?token=eyJhbGciOiJIUzI1NiJ9.eyJzdWIi...
+                                       ↑ 이 부분 전체를 복사
+```
+
+jwt.io Debugger 의 **Encoded** 칸에 붙여넣으면 **Decoded** 에서 아래 내용이 보입니다.
+
+```json
+// Header
+{
+  "alg": "HS256"
+}
+
+// Payload
+{
+  "sub": "1",                ← 우리 DB의 userId
+  "roles": ["ROLE_USER"],   ← 부여된 역할
+  "iat": 1772088570,        ← 발급 시각 (Unix timestamp)
+  "exp": 1772092170         ← 만료 시각 (발급 후 1시간)
+}
+```
 
 ## API Endpoints
 
