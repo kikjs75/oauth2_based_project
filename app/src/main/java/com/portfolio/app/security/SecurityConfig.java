@@ -1,6 +1,7 @@
 package com.portfolio.app.security;
 
 import com.portfolio.app.auth.GoogleOAuth2UserService;
+import com.portfolio.app.auth.GoogleOidcUserService;
 import com.portfolio.app.auth.OAuth2AuthenticationSuccessHandler;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -12,7 +13,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -24,13 +24,16 @@ public class SecurityConfig {
 
     private final JwtTokenProvider tokenProvider;
     private final GoogleOAuth2UserService googleOAuth2UserService;
+    private final GoogleOidcUserService googleOidcUserService;
     private final OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler;
 
     public SecurityConfig(JwtTokenProvider tokenProvider,
                           GoogleOAuth2UserService googleOAuth2UserService,
+                          GoogleOidcUserService googleOidcUserService,
                           OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler) {
         this.tokenProvider = tokenProvider;
         this.googleOAuth2UserService = googleOAuth2UserService;
+        this.googleOidcUserService = googleOidcUserService;
         this.oAuth2SuccessHandler = oAuth2SuccessHandler;
     }
 
@@ -42,6 +45,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**", "/oauth2/**", "/login/oauth2/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/posts", "/api/posts/**").authenticated()
                 .anyRequest().authenticated()
             )
@@ -50,10 +54,8 @@ public class SecurityConfig {
                     // non-OIDC OAuth2 (openid 스코프 없을 때)
                     ui.userService(googleOAuth2UserService);
                     // OIDC (openid 스코프 포함 시 — Google 기본값)
-                    // DefaultOidcUserService 가 userinfo 엔드포인트 호출을 googleOAuth2UserService 에 위임
-                    OidcUserService oidcUserService = new OidcUserService();
-                    oidcUserService.setOauth2UserService(googleOAuth2UserService);
-                    ui.oidcUserService(oidcUserService);
+                    // ID 토큰에서 sub/email 직접 추출하여 DB 저장 처리
+                    ui.oidcUserService(googleOidcUserService);
                 })
                 .successHandler(oAuth2SuccessHandler)
             )

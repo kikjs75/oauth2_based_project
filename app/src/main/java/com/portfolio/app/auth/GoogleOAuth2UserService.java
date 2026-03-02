@@ -41,7 +41,7 @@ public class GoogleOAuth2UserService extends DefaultOAuth2UserService {
                 .orElseGet(() -> {
                     // If the email already exists as a LOCAL user, return that user
                     return userRepository.findByUsername(email)
-                            .orElseGet(() -> userRepository.save(new User(email, "GOOGLE", providerId)));
+                            .orElseGet(() -> userRepository.saveAndFlush(new User(email, "GOOGLE", providerId)));
                 });
 
         Map<String, Object> enrichedAttributes = new HashMap<>(attributes);
