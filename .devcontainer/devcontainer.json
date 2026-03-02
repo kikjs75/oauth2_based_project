@@ -39,7 +39,9 @@
   },
   "portsAttributes": {
     "3306": { "onAutoForward": "ignore" },
-    "13306": { "onAutoForward": "ignore" }
+    "13306": { "onAutoForward": "ignore" },
+    "8080": { "onAutoForward": "ignore" },
+    "8081": { "onAutoForward": "ignore" }
   },
 
   "customizations": {
@@ -85,5 +87,5 @@
   "postStartCommand": "sudo /usr/local/bin/init-firewall.sh",
   "waitFor": "onCreateCommand",
 
-  "postCreateCommand": "java -version && gradle -v && mvn -v"
+  "postCreateCommand": "java -version && gradle -v && mvn -v || true"
 }

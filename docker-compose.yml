@@ -1,4 +1,4 @@
-version: '3.9'
+#version: '3.9'
 
 services:
   mariadb:
@@ -45,10 +45,10 @@ services:
     volumes:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
     depends_on:
       - app
 
@@ -109,6 +109,9 @@ services:
       # 값이 있으면 컨테이너 내부 고정 경로(/secrets/...)를 가리키도록 설정
       GOOGLE_SERVICE_ACCOUNT_KEY_PATH: ${GOOGLE_SERVICE_ACCOUNT_KEY_PATH:+/secrets/google-service-account.json}
       FCM_PROJECT_ID: ${FCM_PROJECT_ID:-}
+      LOGGING_LEVEL_COM_PORTFOLIO: DEBUG
+      LOGGING_LEVEL_ORG_HIBERNATE_SQL: DEBUG
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: DEBUG
     volumes:
       # GOOGLE_SERVICE_ACCOUNT_KEY_PATH(호스트 경로) → 컨테이너 내부 /secrets/ 로 마운트
       # .env 에 GOOGLE_SERVICE_ACCOUNT_KEY_PATH=/your/host/path/service-account.json 설정 필요
